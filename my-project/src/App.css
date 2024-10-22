@@ -1,0 +1,50 @@
+body{
+  background-color:#333;
+  color:#ddd
+}
+*{
+  box-sizing: border-box;
+}
+main{
+  max-width: 360px;
+  margin:30px auto
+}
+
+h1{
+  text-align: center;
+  color:#fff;
+  margin:0;
+}
+
+form{
+  margin-top: 20px;
+}
+
+form input{
+  width:100%;
+  background-color: transparent;
+  color:#ddd;
+  border:2px solid #797979;
+  padding:2px 5px;
+}
+
+form div.basic{
+  display: flex;
+  gap:5px;
+  margin-bottom: 5px;
+}
+
+form button{
+  width:100%;
+  margin-top: 5px;
+  border:0;
+  padding: 5px;
+  background-color:#999;
+}
+ div.transactions{
+  margin-top: 5px;
+ }
+
+ div.transaction{
+  display: flex;
+ }
