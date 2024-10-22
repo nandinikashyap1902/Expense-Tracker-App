@@ -42,9 +42,37 @@ form button{
   background-color:#999;
 }
  div.transactions{
-  margin-top: 5px;
+  margin-top: 10px;
  }
 
  div.transaction{
   display: flex;
+  padding:5px 0;
+  justify-content: space-between;
+  border-top: 1px solid #888;
+ }
+
+ div.transaction:first-child{
+  border-top: 0;
+ }
+ div.transaction div.name{
+  font-size: 1.2rem;
+ }
+
+ div.transaction div.description{
+  font-size:.8rem;
+  color:#888
+ }
+ 
+ div.price.green{
+  color:#1c1;
+ }
+
+ div.price.red{
+  color:#c11
+ }
+
+ div.transaction div.datetime{
+  font-size:.8rem;
+  color:#888
  }
