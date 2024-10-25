@@ -15,7 +15,6 @@ function Transaction() {
       return await response.json()
     }
     getTransactions().then(transactions => {
-     
       setTransactions(transactions)
     })
   }
