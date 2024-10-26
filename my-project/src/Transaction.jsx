@@ -1,13 +1,11 @@
+// import { Link } from 'react-router-dom'
 import './App.css'
-import { useState, useEffect } from 'react'
+
 // import { Navigate } from 'react-router-dom'
 
+import { useState, useEffect } from 'react'
 function Transaction() {
-    const [name, setName] = useState('')
-  const [datetime, setDatetime] = useState('')
-  const [description, setDescription] = useState('')
   const [transactions, setTransactions] = useState([])
-//   const [redirect,setRedirect] = useState(false)
   useEffect(() => {
     async function getTransactions() {
       const url = import.meta.env.VITE_API_URL + '/transactions'
@@ -19,52 +17,26 @@ function Transaction() {
     })
   }
       , [])
-     async function transactionHandler(ev) {
-        ev.preventDefault()
-        const url = import.meta.env.VITE_API_URL + '/transaction'
-        const price = name.split(' ')[0]
-       const response= await fetch(url, {
-          method: "POST",
-          headers: { 'Content-type': 'application/json'},
-          body: JSON.stringify({
-            price,
-            name:name.substring(price.length+1),
-            description,
-            datetime
-          })
-       })
-       const newTransaction = await response.json();
-
-          setTransactions(prevTransactions => [...prevTransactions, newTransaction]);
-        setName('');
-        setDescription('')
-        setDatetime('')
-        // if (response.ok) {
-        //   setRedirect(true)
-        // }
-      }
-     
-    let balance = 0;
-  for (const transaction of transactions) {
-    balance+=transaction.price
-  }
-  balance = balance.toFixed(2)
   return (
-      <>
-    <main>
-        <h1>${balance}<span></span></h1>
-        <form onSubmit={transactionHandler}>
-          <div className="basic">
-
-            <input type="text" placeholder="iphone 13 pro" value={name} onChange={ev=>setName(ev.target.value)}/>
-          <input type="datetime-local" value={datetime} onChange={ev=>setDatetime(ev.target.value)}/>
+    <>
+      <div className='expense-items'>
+        <div className='menu-items'>
+          <div className='profile'>Profile</div>
+          <div className='ul-items'>
+            <ul>
+             {/* <Link to="/"> <li>Home</li></Link> */}
+              {/* <Link to="/expenses"><li>Expenses</li></Link> */}
+          </ul>
           </div>
-          <div className="description">
-
-          <input type="text" placeholder="description" value={description} onChange={ev=>setDescription(ev.target.value)}/>
-          </div>
-          <button type="submit">Add new transaction</button>
-          <div className="transactions">
+        </div>
+      
+        <div className='transactions-page'>
+          <span>Welcome!</span>
+          <h1>All transactions</h1>
+          <div className='transactions-history'>
+          <div className='expense-graph'>expense-graph</div>
+            <div className='recent-expenses'> 
+            <div className="transactions">
             {transactions.length > 0 && transactions.map((transaction,) => (
                <div className="transaction" key={transaction._id}>
             <div className="left">
@@ -79,8 +51,15 @@ function Transaction() {
               
           ))}
           </div>
-        </form>
-     </main>
+</div>
+          </div>
+          <div className='income-items'>
+            <div className='total-income'>total-income</div>
+            <div className='total-expense'>total-expense</div>
+            <div className="balance">balance</div>
+         </div>
+        </div>
+        </div>
       </>
   )
 }
