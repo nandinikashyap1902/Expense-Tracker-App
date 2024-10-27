@@ -86,6 +86,30 @@ app.post('/api/signin', async (req, res) => {
         }
 })
 
+
+app.get('/api/profile', (req, res) => {
+    const { token } = req.cookies;
+    if (!token) {
+        return res.status(401).json({ error: 'No token provided' });
+    }
+  jwt.verify(token, process.env.SECRET_KEY, (err,info) => {
+        if (err) {
+            return res.status(403).json({ error: 'Token is invalid or expired' })
+        }
+        
+        res.json(info);
+    })
+}) 
+
+app.post('/api/logout', (req, res) => {
+    res.clearCookie('token' ,{
+      
+        httpOnly: true,  // JavaScript can't access the cookie
+        secure: false,
+       
+    });
+    res.status(200).json({ message: 'Logged out successfully' });
+})
 app.listen(5000, () => {
     console.log('i am running')
 })

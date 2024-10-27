@@ -5,6 +5,7 @@ import './App.css'
 
 import { useState, useEffect,useContext } from 'react'
 import { UserContext } from './UserContext'
+import Profile from './Profile'
 function Transaction() {
   const [transactions, setTransactions] = useState([])
   const{userInfo} = useContext(UserContext)
@@ -19,13 +20,19 @@ function Transaction() {
     })
   }
     , [])
-  console.log(userInfo)
+    let balance = 0;
+    for (const transaction of transactions) {
+      balance+=transaction.price
+    }
+  balance = balance.toFixed(2)
+  
+  let income = 10000;
   return (
     <>
       <div className='expense-items'>
         <div className='menu-items'>
           <div className='profile'>Profile
-            {/* {userInfo} */}
+           <Profile/>
           </div>
           <div className='ul-items'>
             <ul>
@@ -59,9 +66,9 @@ function Transaction() {
 </div>
           </div>
           <div className='income-items'>
-            <div className='total-income'>total-income</div>
+            <div className='total-income'>₹{income}</div>
             <div className='total-expense'>total-expense</div>
-            <div className="balance">balance</div>
+            <div className="balance">₹{balance}</div>
          </div>
         </div>
         </div>
