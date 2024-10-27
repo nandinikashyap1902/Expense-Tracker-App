@@ -3,9 +3,11 @@ import './App.css'
 
 // import { Navigate } from 'react-router-dom'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect,useContext } from 'react'
+import { UserContext } from './UserContext'
 function Transaction() {
   const [transactions, setTransactions] = useState([])
+  const{userInfo} = useContext(UserContext)
   useEffect(() => {
     async function getTransactions() {
       const url = import.meta.env.VITE_API_URL + '/transactions'
@@ -16,12 +18,15 @@ function Transaction() {
       setTransactions(transactions)
     })
   }
-      , [])
+    , [])
+  console.log(userInfo)
   return (
     <>
       <div className='expense-items'>
         <div className='menu-items'>
-          <div className='profile'>Profile</div>
+          <div className='profile'>Profile
+            {/* {userInfo} */}
+          </div>
           <div className='ul-items'>
             <ul>
              {/* <Link to="/"> <li>Home</li></Link> */}

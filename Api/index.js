@@ -5,10 +5,17 @@ const Transaction = require('./models/Transaction.js')
  const User = require('./models/User.js')
 const dotenv = require('dotenv')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
+const cookieParser = require('cookie-parser')
+app.use(cookieParser())
 dotenv.config()
 // const mongoURL = "mongodb+srv://nandinikashyap:cmR4Xn6Rw9U6HcV0@cluster0.mxgfz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 const mongoose = require("mongoose")
-app.use(cors())
+const corsoptions = {
+    origin: 'http://localhost:5173',
+    credentials: true, 
+}
+app.use(cors(corsoptions))
 app.use(express.json())
 app.get('/api/test', (req, res) => {
     res.json('test ok')
@@ -29,9 +36,56 @@ app.get('/api/transactions', async (req, res) => {
 
 app.post('/api/signup', (req,res) => {
     const { email, password } = req.body
-    mongoose.connect(process.env.MONGO_URL);
-
+    try {
+        mongoose.connect(process.env.MONGO_URL);
+        
+        const salt = bcrypt.genSaltSync(7);
+        const hashedpassword = bcrypt.hashSync(password, salt)
+        const userDoc = User.create({
+            email,
+            password:hashedpassword
+        })
+        res.json(userDoc)
+    }
+    catch(err){
+        res.status.json(err)
+    }
 })
+
+app.post('/api/signin', async (req, res) => {
+  
+    const { email, password } = req.body
+    try {
+        mongoose.connect(process.env.MONGO_URL);
+        const userEmail = await User.findOne({ email })
+        if (!userEmail) {
+            return res.status(400).json({ message: 'Invalid credentials.' });
+        }
+        const userPass = await bcrypt.compare(password, userEmail.password)
+        if (!userPass) {
+            return res.status(400).json({ message: 'Invalid credentials.' });
+        }
+        jwt.sign(
+            { email, id: userEmail._id }, process.env.SECRET_KEY, { expiresIn: '1h' }, (err, token) => {
+                if (err) {
+                    console.error('JWT signing error:', err);
+                    return res.status(500).json({ message: 'Authentication failed. Please try again.' });
+                } 
+                res.cookie('token', token, {
+                    httpOnly: true,  
+                    secure: false,
+                    
+                })
+       
+            .json({ id: userEmail._id, userEmail }) }) 
+    }
+    
+        catch (err) {
+            console.error('Login error:', err);
+            res.status(500).json({ message: 'Internal server error. Please try again later.' });
+        }
+})
+
 app.listen(5000, () => {
     console.log('i am running')
 })

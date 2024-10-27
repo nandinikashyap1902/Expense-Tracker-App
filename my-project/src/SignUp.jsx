@@ -5,13 +5,18 @@ function SignUp() {
     const [password, setPassword] = useState('')
     function signUpUser(ev) {
         ev.preventDefault();
-        const url = import.meta.env.VITE_API_URL +'/signup'
-        fetch(url, {
-            method: 'POST',
-            headers: { 'Content-type': 'application/json'},
-            body:JSON.stringify({email:email,
-                password:password}) 
-        })
+        const url = import.meta.env.VITE_API_URL + '/signup'
+        try {
+            
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-type': 'application/json'},
+                body:JSON.stringify({email:email,
+                    password:password}) 
+            })
+        } catch (err) {
+            console.error(err)
+        }
     }
   return (
       <>
