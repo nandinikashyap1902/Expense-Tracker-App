@@ -21,16 +21,51 @@ app.get('/api/test', (req, res) => {
     res.json('test ok')
 })
 
-app.post('/api/transaction', async (req, res) => {
+function authMiddleware(req, res, next) {
+    const { token } = req.cookies
+  
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized access. No token provided.' });
+    }
+  
+    try {
+     
+      const decoded = jwt.verify(token, process.env.SECRET_KEY); 
+      req.user = decoded;
+      next(); 
+    } catch (err) {
+      console.error('Token verification error:', err);
+      res.status(401).json({ message: 'Token is invalid or expired.' });
+    }
+  }
+app.post('/api/transaction',async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
-    const { price,name, description, datetime } = req.body
-    const transaction = await Transaction.create({ price,name, description, datetime })
-    res.json(transaction)
+    const { token }  = req.cookies
+    const {  income,
+        expense,
+        datetime,
+        category,
+        description } = req.body
+    jwt.verify(token, process.env.SECRET_KEY, async (err, info) => {
+        if (err) throw err;
+        // console.log(info)
+        const transaction = await Transaction.create({
+            income,
+            expense,
+            datetime,
+            category,
+            description,
+            author:info.id
+        })
+        res.json(transaction)
+    })
+    
+   
 })
 
-app.get('/api/transactions', async (req, res) => {
+app.get('/api/transactions', authMiddleware,async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
-    const transactions = await Transaction.find();
+    const transactions = await Transaction.find({ author: req.user.id }) 
     res.json(transactions)
 })
 
@@ -109,6 +144,21 @@ app.post('/api/logout', (req, res) => {
        
     });
     res.status(200).json({ message: 'Logged out successfully' });
+})
+
+app.delete('/api/transaction/:id', authMiddleware,async (req, res) => {
+    try {
+        const { id } = req.params;
+        const transactionDoc = await Transaction.findById(id)
+        if (!transactionDoc) {
+            return res.status(404).json({ message: 'Post not found.' });
+        }
+      return  res.json(transactionDoc)
+    }catch (err) {
+        console.error('Error deleting post:', err);
+        res.status(500).json({ message: 'Internal server error. Please try again later.' });
+    }
+
 })
 app.listen(5000, () => {
     console.log('i am running')

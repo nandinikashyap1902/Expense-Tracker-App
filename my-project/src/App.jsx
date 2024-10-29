@@ -14,7 +14,7 @@ function App() {
         
    <Routes>
         <Route index element={<Transaction />} />
-        <Route path='/transactions' element={<Transactions />} />
+        <Route path='/add-new-expense' element={<Transactions />} />
         <Route path="/header" element={<Header />}></Route>
         <Route path='/signup' element={<SignUp />}></Route>
         <Route path='/signin' element={<SignIn />}></Route>

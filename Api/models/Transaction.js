@@ -1,10 +1,12 @@
 const mongoose = require('mongoose')
-// const { Schema, model } = mongoose;
+ const { Schema} = mongoose;
 const TransactionSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    price:{type:Number, required:true},
-    description: { type:String, required: true } ,
-    datetime: {type: String, required: true } ,
+    income: { type: Number },
+    expense:{type:Number, },
+    datetime: { type: String},
+    category:{type: String,},
+    description: { type: String, },
+    author:{type:Schema.Types.ObjectId,ref:'User'}
 })
 
 const TransactionModel = mongoose.model('Transaction', TransactionSchema)
