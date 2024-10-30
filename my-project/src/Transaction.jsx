@@ -12,21 +12,30 @@ function Transaction() {
   useEffect(() => {
     async function getTransactions() {
       const url = import.meta.env.VITE_API_URL + '/transactions'
-      const response = await fetch(url, {
-        method: 'GET',
-        credentials:'include'
-      });
-      if (response.status === 401) {
-        return 'unautho'
-      }
+      try {
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          credentials:'include'
+        });
+        if (response.status === 401) {
+          setTransactions([]); 
+         
+        }
       return await response.json()
     }
+    catch (error) {
+      console.error("Error fetching transactions:", error);
+      setTransactions([]); // Set to empty array on error
+      return null;
+    }
+  }
     getTransactions().then(transactions => {
-      setTransactions(transactions)
+      if (transactions) setTransactions(transactions); 
     })
    
   }
-    , [])
+    , [setTransactions])
     let balance = 0;
     for (const transaction of transactions) {
       balance+=transaction.price

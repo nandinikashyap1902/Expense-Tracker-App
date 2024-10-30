@@ -15,6 +15,13 @@ const corsoptions = {
     origin: 'http://localhost:5173',
     credentials: true, 
 }
+mongoose.connect(process.env.MONGO_URL)
+    .then(() => console.log('connected successfully'))
+    .catch((err)=>console.log(err))
+    
+
+    
+
 app.use(cors(corsoptions))
 app.use(express.json())
 app.get('/api/test', (req, res) => {
@@ -39,7 +46,7 @@ function authMiddleware(req, res, next) {
     }
   }
 app.post('/api/transaction',async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    
     const { token }  = req.cookies
     const {  income,
         expense,
@@ -48,7 +55,6 @@ app.post('/api/transaction',async (req, res) => {
         description } = req.body
     jwt.verify(token, process.env.SECRET_KEY, async (err, info) => {
         if (err) throw err;
-        // console.log(info)
         const transaction = await Transaction.create({
             income,
             expense,
@@ -64,15 +70,15 @@ app.post('/api/transaction',async (req, res) => {
 })
 
 app.get('/api/transactions', authMiddleware,async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
-    const transactions = await Transaction.find({ author: req.user.id }) 
+  
+    const transactions = await Transaction.find({ author: req.user.id })
     res.json(transactions)
 })
 
 app.post('/api/signup', (req,res) => {
     const { email, password } = req.body
     try {
-        mongoose.connect(process.env.MONGO_URL);
+       
         
         const salt = bcrypt.genSaltSync(7);
         const hashedpassword = bcrypt.hashSync(password, salt)
@@ -91,7 +97,7 @@ app.post('/api/signin', async (req, res) => {
   
     const { email, password } = req.body
     try {
-        mongoose.connect(process.env.MONGO_URL);
+      
         const userEmail = await User.findOne({ email })
         if (!userEmail) {
             return res.status(400).json({ message: 'Invalid credentials.' });
@@ -146,19 +152,50 @@ app.post('/api/logout', (req, res) => {
     res.status(200).json({ message: 'Logged out successfully' });
 })
 
-app.delete('/api/transaction/:id', authMiddleware,async (req, res) => {
+app.delete('/api/transaction/:id', authMiddleware, async (req, res) => {
     try {
+        
+      
         const { id } = req.params;
         const transactionDoc = await Transaction.findById(id)
         if (!transactionDoc) {
             return res.status(404).json({ message: 'Post not found.' });
         }
-      return  res.json(transactionDoc)
+        if (transactionDoc.author.toString()!== req.user.id) {
+            console.log(typeof req.user.id)
+            return res.status(403).json({ message: 'Forbidden: You are not allowed to delete this post.' });
+        }
+        await Transaction.findByIdAndDelete(id)
+        return res.status(200).json({ message: 'Post deleted successfully.' });
     }catch (err) {
         console.error('Error deleting post:', err);
         res.status(500).json({ message: 'Internal server error. Please try again later.' });
     }
 
+})
+
+app.put('/api/transaction', (req, res) => {
+    // try {
+        const {  income,
+            expense,
+            datetime,
+            category,
+            description } = req.body
+    // }
+    // catch(err) {
+    //     console.err(err)
+    // }
+  console.log( {  income,
+    expense,
+    datetime,
+    category,
+    description })
+})
+app.get('/api/transaction/:id', async(req, res) => {
+    const { id } = req.params
+   
+  const transaction = await Transaction.findById(id)
+    res.json(transaction)
 })
 app.listen(5000, () => {
     console.log('i am running')
