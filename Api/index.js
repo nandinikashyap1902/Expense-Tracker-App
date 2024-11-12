@@ -174,22 +174,34 @@ app.delete('/api/transaction/:id', authMiddleware, async (req, res) => {
 
 })
 
-app.put('/api/transaction', (req, res) => {
+app.put('/api/transaction', async(req, res) => {
     // try {
-        const {  income,
-            expense,
-            datetime,
-            category,
-            description } = req.body
-    // }
-    // catch(err) {
-    //     console.err(err)
-    // }
-  console.log( {  income,
-    expense,
-    datetime,
-    category,
-    description })
+    const { token } = req.cookies;
+   
+        
+        jwt.verify(token, process.env.SECRET_KEY, async (err, info) => {
+            if (err) throw err;
+            const {  income,
+                expense,
+                datetime,
+                category,
+                description, id } = req.body
+            const transaction = await Transaction.findById(id)
+            const isAuthor = JSON.stringify(transaction.author) === JSON.stringify(info.id);
+            if(!isAuthor){
+                return res.status(400).json('you are not the author')
+            }
+             
+            transaction.income= income;
+            transaction. expense= expense;
+            transaction.datetime = datetime;
+            transaction.category = category;
+            transaction.description = description;
+        
+             await transaction.save();
+            res.json(transaction)
+        })
+    
 })
 app.get('/api/transaction/:id', async(req, res) => {
     const { id } = req.params

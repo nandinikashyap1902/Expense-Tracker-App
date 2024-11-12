@@ -9,7 +9,8 @@ function EditTransaction() {
   const [description, setDescription] = useState('')
   const [income, setIncome] = useState()
   
-    const {id} = useParams()
+  const { id } = useParams()
+  
     useEffect(() => {
         const url = import.meta.env.VITE_API_URL + `/transaction/${id}`
         fetch(url, {
@@ -34,13 +35,18 @@ function EditTransaction() {
         const url = import.meta.env.VITE_API_URL + '/transaction'
 
         fetch(url, {
-            method: 'PUT',
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'  
+          },
+           credentials:'include',
             body:JSON.stringify({
                 income,
                 expense,
                 datetime,
                 category,
-                description,
+              description,
+                id,
               }),
         })
     }

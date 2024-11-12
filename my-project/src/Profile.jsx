@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { UserContext } from "./UserContext"
 import { useContext } from "react"
+import { Link } from "react-router-dom"
 function Profile() {
     const { userInfo, setUserInfo } = useContext(UserContext)
     useEffect(() => {
@@ -33,14 +34,26 @@ function Profile() {
     ,[setUserInfo])
     let username = userInfo?.
         email ? userInfo.email.split('@')[0] : ''
+        function logoutUser() {
+            const url = import.meta.env.VITE_API_URL + '/logout'
+         fetch(url, {
+              method: 'POST',
+              credentials: 'include'
+          }).then((res) => {
+            if (res.ok) {
+              setUserInfo(null)
+            }
+          })
+            
+        }
     return (
         <>
            {username ? (
                 <div>
-                    Hiii, {username} <button>Logout</button>
+                    Hiii, {username} <button onClick={logoutUser}>Logout</button>
                 </div>
             ) : (
-                <div>Login</div>
+                <Link to="/signin"></Link>
             )}
         </>
   )

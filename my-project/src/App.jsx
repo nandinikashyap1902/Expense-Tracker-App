@@ -5,7 +5,7 @@ import Transactions from './Transactions'
 import Header from './Header'
 import SignUp from './SignUp'
 import SignIn from './SignIn'
-import Logout from './Logout'
+// import Logout from './Logout'
 import { UserContextProvider } from './UserContext'
 import EditTransaction from './EditTransaction'
 function App() {
@@ -19,7 +19,7 @@ function App() {
         <Route path="/header" element={<Header />}></Route>
         <Route path='/signup' element={<SignUp />}></Route>
         <Route path='/signin' element={<SignIn />}></Route>
-        <Route path='/logout' element={<Logout/>}></Route>
+        {/* <Route path='/logout' element={<Logout/>}></Route> */}
         <Route path='/edit-transaction/:id' element={<EditTransaction/>}></Route>
       </Routes>
 </UserContextProvider>
