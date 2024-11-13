@@ -7,7 +7,8 @@ function Transactions() {
   const [datetime, setDatetime] = useState('')
   const [description, setDescription] = useState('')
   const [transactions, setTransactions] = useState([])
-  const {income,expense, setExpense} = useContext(UserContext)
+  const { income } = useContext(UserContext)
+ const [expense, setExpense]=useState(0)
   const [category, setCategory] = useState('')
   const [redirect,setredirect] = useState(false)
   // const [id, setId] = useState('');
@@ -41,7 +42,8 @@ function Transactions() {
   }
       , [])
      async function transactionHandler(ev) {
-        ev.preventDefault()
+       ev.preventDefault()
+      
         const url = import.meta.env.VITE_API_URL + '/transaction'
         // const price = name.split(' ')[0]
        const response= await fetch(url, {
@@ -86,7 +88,7 @@ fetch(url, {
     });
   }
   
- let currentBalance=income
+  let currentBalance = Number(income)
   for (const transaction of transactions) {
     if (transaction.expense < 0) {
       currentBalance -= Math.abs(transaction.expense); 

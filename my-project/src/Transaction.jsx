@@ -4,13 +4,14 @@ import './App.css'
 
 import { useState, useEffect,useContext } from 'react'
 import { UserContext } from './UserContext'
+import { Chart } from './Chart'
 // import Profile from './Profile'
 function Transaction() {
   const [transactions, setTransactions] = useState([])
   const [showExpenseForm, setExpenseForm] = useState(false)
   // const { userInfo } = useContext(UserContext)
   const { userInfo, setUserInfo } = useContext(UserContext)
-  const { income, setIncome, expense } = useContext(UserContext)
+  const { income, setIncome } = useContext(UserContext)
   
   useEffect(() => {
     const url = import.meta.env.VITE_API_URL + '/profile'
@@ -62,11 +63,19 @@ function Transaction() {
    
   }
     , [setTransactions])
-  let balance = 0;
+  let expenses = 0;
+  let leftBalance = Number(income);
   for (const transaction of transactions) {
-    balance += transaction.price
+    expenses += transaction.expense
+    if (leftBalance < 0) {
+      
+      leftBalance -= transaction.expense
+    }
+    else {
+      leftBalance += transaction.expense
+    }
   }
-  balance = balance.toFixed(2)
+  
   
   // let income = 10000;
   function addNewExpense() {
@@ -92,7 +101,7 @@ let username = userInfo?.
       })
         
   }
-  console.log(expense)
+  
   return (
     <>
       {userInfo === null ? <div>pls <Link to="/signin">SignIn</Link> to create transactions</div>:
@@ -129,7 +138,9 @@ let username = userInfo?.
             
             
           <div className='transactions-history'>
-            <div className='expense-graph'>expense-graph</div>
+              <div className='expense-graph'>expense-graph
+                <Chart></Chart>
+            </div>
             <div className='recent-expenses'>
               <h4>Recent Transsactions</h4>
               <div className="transactions">
@@ -152,8 +163,8 @@ let username = userInfo?.
           </div>
           <div className='income-items'>
             <div className='total-income'> total income₹{income}</div>
-              <div className='total-expense'>total-expense₹{expense}</div>
-            <div className="balance">left balance₹{balance}</div>
+              <div className='total-expense'>total-expense₹{expenses}</div>
+              <div className="balance">left balance₹{ leftBalance}</div>
           </div>
         </div>
       </div>

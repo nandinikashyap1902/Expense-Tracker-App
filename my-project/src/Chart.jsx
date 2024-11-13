@@ -1,94 +1,80 @@
-import { Bar } from "@reactchartjs/react-chart.js";
-import "chartjs-plugin-datalabels";
+import React from 'react';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Doughnut } from 'react-chartjs-2';
+import { useState,useEffect } from 'react';
 
-const data = {
-  labels: [
-    "2015年度",
-    "2016年度",
-    "2017年度",
-    "2018年度",
-    "2019年度",
-    "2020年度"
-  ],
-  datasets: [
-    {
-      type: "bar",
-      label: "総数",
-      backgroundColor: "#318fb5",
-      data: [4857, 7289, 8108, 7899, 11140, 13559],
-      borderColor: "white",
-      borderWidth: 2,
-      yAxisID: "first-y-axis",
-      order: 2, // order低いほうが上にくる
-      datalabels: {
-        display: "auto", // グラフの数値表示が重なったら、片方消すオプション
-        align: "top"
+ChartJS.register(ArcElement, Tooltip, Legend);
+
+
+
+export function Chart() {
+  const [transactions, setTransactions] = useState([])
+ 
+  useEffect(() => {
+    async function getTransactions() {
+      const url = import.meta.env.VITE_API_URL + '/transactions'
+      try {
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          credentials:'include'
+        });
+        if (response.status === 401) {
+          setTransactions([]); // Set to empty array if unauthorized
+          return null;
+        }
+        return await response.json()
       }
-    },
-    {
-      type: "bar",
-      label: "hoge数",
-      backgroundColor: "#b0cac7",
-      data: [680, 1108, 1200, 1098, 967, 800],
-      yAxisID: "first-y-axis",
-      order: 3,
-      datalabels: {
-        display: "auto",
-        align: "top"
+      catch (error) {
+        console.error("Error fetching transactions:", error);
+        setTransactions([]); // Set to empty array on error
+        return null;
       }
-    },
-    {
-      type: "line",
-      label: "hoge率",
-      borderColor: "#005086",
-      borderWidth: 1,
-      fill: false,
-      data: [14, 15.2, 14.8, 13.9, 8.68, 5.9],
-      yAxisID: "second-y-axis",
-      order: 1,
-      lineTension: 0, // 直線引く
-      datalabels: {
-        display: "auto",
-        align: "top"
-      }
+ 
     }
-  ]
-};
-
-const options = {
-  scales: {
-    yAxes: [
-      {
-        id: "first-y-axis",
-        type: "linear",
-        position: "left",
-        gridLines: {},
-        ticks: {
-          callback: (value: number) => {
-            return value + "人";
-          }
-        }
-      },
-      {
-        id: "second-y-axis",
-        type: "linear",
-        position: "right",
-        gridLines: {},
-        ticks: {
-          callback: (value: number) => {
-            return value + "%";
-          }
-        }
-      }
-    ]
-  },
-  legend: {
-    position: "right"
+    getTransactions().then(transactions => {
+      if (transactions) setTransactions(transactions); // Update only if transactions data exists
+    });
   }
-};
-
-const ReactChartJs2Sample = () => {
-  return <Bar type="bar" data={data} options={options} />;
-};
-
-export default ReactChartJs2Sample;
+    , [])
+    const categories = ["Education", "Groceries", "Health", "Clothing", "Travelling", "Other"];
+  
+  // Calculate the total expenses per category
+  const categoryTotals = categories.map(category => {
+    return transactions
+      .filter(item => item.category === category)
+      .reduce((total, item) => total + item.expense, 0); // Sum up expenses for each category
+  });
+  
+     const data = {
+  
+      labels: categories,
+     
+      datasets: [
+        {
+          label: 'expense',
+          
+        
+    data:categoryTotals,
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.2)',
+            'rgba(54, 162, 235, 0.2)',
+            'rgba(255, 206, 86, 0.2)',
+            'rgba(75, 192, 192, 0.2)',
+            'rgba(153, 102, 255, 0.2)',
+            'rgba(255, 159, 64, 0.2)',
+          ],
+          borderColor: [
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)',
+          ],
+          borderWidth: 1,
+        },
+      ],
+    };
+  return <Doughnut data={data} />;
+}
