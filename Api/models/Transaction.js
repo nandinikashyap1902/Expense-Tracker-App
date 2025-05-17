@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
  const { Schema} = mongoose;
 const TransactionSchema = new mongoose.Schema({
-    income: { type: Number },
+    income: { type: Number,default: 0 },
     expense:{type:Number, },
     datetime: { type: String},
     category:{type: String,},

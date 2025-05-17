@@ -76,15 +76,14 @@ app.get('/api/transactions', authMiddleware,async (req, res) => {
 })
 
 app.post('/api/signup', (req,res) => {
-    const { email, password } = req.body
+    const { email, password ,income} = req.body
     try {
-       
-        
         const salt = bcrypt.genSaltSync(7);
         const hashedpassword = bcrypt.hashSync(password, salt)
         const userDoc = User.create({
             email,
-            password:hashedpassword
+            password:hashedpassword,
+            income
         })
         res.json(userDoc)
     }
@@ -130,6 +129,7 @@ app.post('/api/signin', async (req, res) => {
 
 app.get('/api/profile', (req, res) => {
     const { token } = req.cookies;
+   const {income} = req.body
     if (!token) {
         return res.status(401).json({ error: 'No token provided' });
     }
@@ -140,6 +140,7 @@ app.get('/api/profile', (req, res) => {
         
         res.json(info);
     })
+    res.json({income})
 }) 
 
 app.post('/api/logout', (req, res) => {
@@ -176,6 +177,7 @@ app.delete('/api/transaction/:id', authMiddleware, async (req, res) => {
 
 app.put('/api/transaction', async(req, res) => {
     // try {
+       
     const { token } = req.cookies;
    
         

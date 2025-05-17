@@ -76,5 +76,10 @@ export function Chart() {
         },
       ],
     };
-  return <Doughnut data={data} />;
+  return (
+
+  <div style={{ maxWidth: 400, margin:'100px auto'}}>
+    <Doughnut data={data} options={{ responsive: true, plugins: { legend: { position: "bottom" } } }}/>
+    </div>
+  )
 }

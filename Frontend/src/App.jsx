@@ -8,12 +8,18 @@ import SignIn from './SignIn'
 // import Logout from './Logout'
 import { UserContextProvider } from './UserContext'
 import EditTransaction from './EditTransaction'
+import { useContext } from 'react'
+import Profile from './Profile'
+import { UserContext } from './UserContext'
+import { Link } from 'react-router-dom'
 function App() {
+  
   return (
     
       <UserContextProvider>
         
-   <Routes>
+      <Routes>
+      
         <Route path="/" element={<Transaction />} />
         <Route path='/add-new-expense' element={<Transactions />} />
         <Route path="/header" element={<Header />}></Route>
