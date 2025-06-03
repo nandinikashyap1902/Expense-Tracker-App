@@ -45,28 +45,55 @@ function authMiddleware(req, res, next) {
       res.status(401).json({ message: 'Token is invalid or expired.' });
     }
   }
-app.post('/api/transaction',async (req, res) => {
-    
-    const { token }  = req.cookies
-    const {  income,
-        expense,
-        datetime,
-        category,
-        description } = req.body
-    jwt.verify(token, process.env.SECRET_KEY, async (err, info) => {
-        if (err) throw err;
+app.post('/api/transaction', async (req, res) => {
+    try {
+        const { token } = req.cookies;
+        const { amount, type, datetime, category, description } = req.body;
+
+        if (!token) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        // Validate required fields
+        if (!amount || isNaN(amount) || amount <= 0) {
+            return res.status(400).json({ error: 'Valid amount is required' });
+        }
+        if (!type || !['income', 'expense'].includes(type)) {
+            return res.status(400).json({ error: 'Valid type (income/expense) is required' });
+        }
+        if (!category) {
+            return res.status(400).json({ error: 'Category is required' });
+        }
+
+        // Verify JWT token
+        const decoded = jwt.verify(token, process.env.SECRET_KEY);
+        
+        // Create new transaction
         const transaction = await Transaction.create({
-            income,
-            expense,
-            datetime,
+            amount: parseFloat(amount),
+            type,
+            datetime: datetime || new Date().toISOString(),
             category,
-            description,
-            author:info.id
-        })
-        res.json(transaction)
-    })
-    
-   
+            description: description || '',
+            author: decoded.id
+        });
+
+        res.status(201).json(transaction);
+    } catch (error) {
+        console.error('Transaction creation error:', error);
+        
+        // Handle JWT errors
+        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Invalid or expired token' });
+        }
+        
+        // Handle validation errors
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ error: error.message });
+        }
+        
+        res.status(500).json({ error: 'Internal server error' });
+    }
 })
 
 app.get('/api/transactions', authMiddleware,async (req, res) => {
@@ -75,22 +102,50 @@ app.get('/api/transactions', authMiddleware,async (req, res) => {
     res.json(transactions)
 })
 
-app.post('/api/signup', (req,res) => {
-    const { email, password ,income} = req.body
+app.post('/api/signup', async (req, res) => {
+    const { email, password, income } = req.body;
+    
     try {
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ 
+                message: 'An account with this email already exists. Please use a different email or sign in.' 
+            });
+        }
+
         const salt = bcrypt.genSaltSync(7);
-        const hashedpassword = bcrypt.hashSync(password, salt)
-        const userDoc = User.create({
+        const hashedPassword = bcrypt.hashSync(password, salt);
+        
+        const userDoc = await User.create({
             email,
-            password:hashedpassword,
-            income
-        })
-        res.json(userDoc)
+            password: hashedPassword,
+            income: Number(income)
+        });
+        
+        res.status(201).json({ 
+            message: 'User created successfully',
+            user: {
+                id: userDoc._id,
+                email: userDoc.email,
+                income: userDoc.income
+            }
+        });
     }
-    catch(err){
-        res.status.json(err)
+    catch (err) {
+        console.error('Signup error:', err);
+        // Handle other potential errors
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ 
+                message: 'Validation failed',
+                errors: err.errors 
+            });
+        }
+        res.status(500).json({ 
+            message: 'An error occurred while creating your account. Please try again.' 
+        });
     }
-})
+});
 
 app.post('/api/signin', async (req, res) => {
   
@@ -106,7 +161,7 @@ app.post('/api/signin', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials.' });
         }
         jwt.sign(
-            { email, id: userEmail._id }, process.env.SECRET_KEY, { expiresIn: '1h' }, (err, token) => {
+            { email, id: userEmail._id}, process.env.SECRET_KEY, { expiresIn: '1h' }, (err, token) => {
                 if (err) {
                     console.error('JWT signing error:', err);
                     return res.status(500).json({ message: 'Authentication failed. Please try again.' });
@@ -124,24 +179,32 @@ app.post('/api/signin', async (req, res) => {
             console.error('Login error:', err);
             res.status(500).json({ message: 'Internal server error. Please try again later.' });
         }
+       // res.json()
 })
 
 
-app.get('/api/profile', (req, res) => {
+app.get('/api/profile', async (req, res) => {
     const { token } = req.cookies;
-   const {income} = req.body
+    //console.log(token)
+   
     if (!token) {
         return res.status(401).json({ error: 'No token provided' });
     }
-  jwt.verify(token, process.env.SECRET_KEY, (err,info) => {
+  jwt.verify(token, process.env.SECRET_KEY, async (err,info) => {
         if (err) {
             return res.status(403).json({ error: 'Token is invalid or expired' })
         }
         
-        res.json(info);
+        try {
+            const user = await User.findById(info.id);
+            res.json({ income: user.income });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch income.' });
+        }
     })
-    res.json({income})
+    // res.json({income})
 }) 
+
 
 app.post('/api/logout', (req, res) => {
     res.clearCookie('token' ,{
