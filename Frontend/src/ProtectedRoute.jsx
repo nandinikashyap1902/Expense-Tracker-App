@@ -7,9 +7,9 @@ const ProtectedRoute = ({ children }) => {
   const { userInfo } = useContext(UserContext);
   
   // If user is not logged in, redirect to signin
-  if (!userInfo || !userInfo.email) {
-    return <Navigate to="/signin" replace />;
-  }
+  // if (!userInfo || !userInfo.email) {
+  //   return <Navigate to="/signin" replace />;
+  // }
 
   return children;
 };

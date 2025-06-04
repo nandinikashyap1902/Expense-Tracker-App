@@ -24,23 +24,9 @@ const AllTransactions = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        // const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-        // if (!token) {
-        //   throw new Error('Authentication required');
-        // }
-        // method: 'POST',
-        // headers: {
-        //   'Content-Type': 'application/json',
-        //   // Add authentication token if needed
-        //   // 'Authorization': `Bearer ${userInfo?.token}`
-        // },
-        // body: JSON.stringify(transactionData),
-        // credentials: 'include' // Include cookies if using session-based auth
+        
         const response = await fetch(`${import.meta.env.VITE_API_URL}/transactions`, {
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //   },
-        //   credentials: 'include',
+       
          method: 'GET',
           credentials: 'include'
         });
@@ -80,7 +66,7 @@ const AllTransactions = () => {
 
     // Apply type filter
     if (filters.type !== 'all') {
-      result = result.filter((t) => t.type === filters.type);
+      result = result.filter((t) => t.transactionType === filters.type);
     }
 
     // Apply category filter
@@ -241,7 +227,7 @@ const AllTransactions = () => {
           filteredTransactions.map((transaction) => (
             <div 
               key={transaction._id} 
-              className={`transaction-row ${transaction.type}`}
+              className={`transaction-row ${transaction.transactionType}`}
             >
               <div className="transaction-cell date">
                 {formatDate(transaction.datetime)}
@@ -253,9 +239,9 @@ const AllTransactions = () => {
                 {transaction.category || 'Uncategorized'}
               </div>
               <div className="transaction-cell amount">
-                <span className={`amount ${transaction.type}`}>
-                  {transaction.type === 'expense' ? '-' : '+'}
-                  ${transaction.amount.toFixed(2)}
+                <span className={`amount ${transaction.transactionType}`}>
+                  {transaction.transactionType === 'expense' ? '-' : '+'}
+                  ₹{Number(transaction.transactionType === 'expense' ? transaction.expense : transaction.amount).toFixed(2)}
                 </span>
               </div>
               <div className="transaction-cell actions">
@@ -279,41 +265,39 @@ const AllTransactions = () => {
         )}
       </div>
 
-      <div className="transactions-summary">
-        <div className="summary-item">
-          <span>Total Income:</span>
-          <span className="amount income">
-            ${filteredTransactions
-              .filter(t => t.type === 'income')
-              .reduce((sum, t) => sum + t.amount, 0)
-              .toFixed(2)}
-          </span>
-        </div>
-        <div className="summary-item">
-          <span>Total Expenses:</span>
-          <span className="amount expense">
-            -${filteredTransactions
-              .filter(t => t.type === 'expense')
-              .reduce((sum, t) => sum + t.amount, 0)
-              .toFixed(2)}
-          </span>
-        </div>
-        <div className="summary-item total">
-          <span>Net Total:</span>
-          <span className={`amount ${
-            filteredTransactions.reduce((sum, t) => 
-              t.type === 'income' ? sum + t.amount : sum - t.amount, 0
-            ) >= 0 ? 'income' : 'expense'
-          }`}>
-            {filteredTransactions.reduce((sum, t) => 
-              t.type === 'income' ? sum + t.amount : sum - t.amount, 0
-            ) >= 0 ? '+' : '-'}
-            ${Math.abs(filteredTransactions.reduce((sum, t) => 
-              t.type === 'income' ? sum + t.amount : sum - t.amount, 0
-            )).toFixed(2)}
-          </span>
-        </div>
+    <div className="transactions-summary">
+      <div className="summary-item">
+        <span>Total Income:</span>
+        <span className="amount income">
+          ₹{filteredTransactions
+            .filter(t => t.transactionType === 'income')
+            .reduce((sum, t) => sum + Number(t.amount), 0)
+            .toFixed(2)}
+        </span>
       </div>
+      <div className="summary-item">
+        <span>Total Expenses:</span>
+        <span className="amount expense">
+          -₹{filteredTransactions
+            .filter(t => t.transactionType === 'expense')
+            .reduce((sum, t) => sum + Number(t.expense), 0)
+            .toFixed(2)}
+        </span>
+      </div>
+      <div className="summary-item total">
+        <span>Net Total:</span>
+        <span className="amount">
+          ₹{(
+            filteredTransactions
+              .filter(t => t.transactionType === 'income')
+              .reduce((sum, t) => sum + Number(t.amount), 0) -
+            filteredTransactions
+              .filter(t => t.transactionType === 'expense')
+              .reduce((sum, t) => sum + Number(t.expense), 0)
+          ).toFixed(2)}
+        </span>
+      </div>
+    </div>
     </div>
   );
 };

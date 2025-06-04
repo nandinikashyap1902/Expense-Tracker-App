@@ -21,55 +21,28 @@ function SignIn() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, password }),
         credentials: 'include'
-      })
-
-      const data = await response.json();
-      // In SignIn.jsx
-      async function signInUser(ev) {
-        ev.preventDefault();
-        setError(''); // Clear previous errors
-        const url = import.meta.env.VITE_API_URL + '/signin'
-        try {
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-            credentials: 'include'
-          });
-      
-          if (response.ok) {
-            // Fetch the profile data after successful login
-            const profileResponse = await fetch(import.meta.env.VITE_API_URL + '/profile', {
-              credentials: 'include'
-            });
-            
-            if (profileResponse.ok) {
-              const profileData = await profileResponse.json();
-              setUserInfo(profileData);
-              navigate('/');
-            } else {
-              throw new Error('Failed to fetch profile data');
-            }
-          } else {
-            const data = await response.json();
-            setError(data.message || 'Invalid email or password');
-          }
-        } catch (err) {
-          console.error(err);
-          setError(err.message || 'An error occurred. Please try again.');
-        }
-      }
+      });
+  
       if (response.ok) {
-        setUserInfo({ email })
-        navigate('/');
+        // Fetch the profile data after successful login
+        const profileResponse = await fetch(import.meta.env.VITE_API_URL + '/profile', {
+          credentials: 'include'
+        });
+        
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          setUserInfo(profileData);
+          navigate('/');
+        } else {
+          throw new Error('Failed to fetch profile data');
+        }
       } else {
-        // Handle different error cases
+        const data = await response.json();
         setError(data.message || 'Invalid email or password');
       }
-      
     } catch (err) {
       console.error(err);
-      setError('An error occurred. Please try again.');
+      setError(err.message || 'An error occurred. Please try again.');
     }
   }
 

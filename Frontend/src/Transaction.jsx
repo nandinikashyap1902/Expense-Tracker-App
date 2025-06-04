@@ -1,147 +1,102 @@
-// import { Link } from 'react-router-dom'
 import './App.css'
 import { Navigate, Link } from 'react-router-dom'
 import { useState, useEffect, useContext, useCallback } from 'react'
 import { UserContext } from './UserContext'
 import { Chart } from './Chart'
-import SignIn from './SignIn';
 import { FaBars, FaTimes, FaWallet, FaHistory } from 'react-icons/fa';
-import './Sidebar.css'; // We'll create this for sidebar styles
-
+import './Sidebar.css' 
+import { useNavigate } from 'react-router-dom'
 function Transaction() {
-  const [transactions, setTransactions] = useState([])
-  const [showExpenseForm, setExpenseForm] = useState(false)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('transactions')
-  const { userInfo, setUserInfo, income, setIncome } = useContext(UserContext)
-  const [isLoading, setIsLoading] = useState(true);
+  // All state declarations at the top
+  const [transactions, setTransactions] = useState([]);
+  const [showExpenseForm, setExpenseForm] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('transactions');
+  const { userInfo, income, setIncome ,setUserInfo} = useContext(UserContext);
+  const [isLoading, setIsLoading] = useState(false);
+   const navigate = useNavigate();
   
-  // Toggle sidebar
+  
+  // All hooks must be declared before any conditional returns
+  
+  // Toggle sidebar callback
   const toggleSidebar = useCallback(() => {
-    setIsSidebarOpen(!isSidebarOpen)
-  }, [isSidebarOpen])
+    setIsSidebarOpen(!isSidebarOpen);
+  }, [isSidebarOpen]);
 
-  // In Transaction.jsx
- // In Transaction.jsx, update the useEffect for profile fetching
-//  useEffect(() => {
-//    const fetchProfile = async () => {
-//      try {
-//        const url = import.meta.env.VITE_API_URL + '/profile';
-//        const response = await fetch(url, {
-//          method: 'GET',
-//          credentials: 'include'
-//        });
- 
-//        if (response.status === 401) {
-//          // If unauthorized, clear user info and redirect to signin
-//          setUserInfo(null);
-//          return;
-//        }
- 
-//        const info = await response.json();
-//        if (info) {
-//          setUserInfo(info);
-//          setIncome(info.income || 0);
-//        }
-//      } catch (err) {
-//        console.error('Error fetching profile:', err);
-//        setUserInfo(null);
-//      }
-//    };
- 
-//    fetchProfile();
-//  }, [setUserInfo, setIncome]);
-useEffect(() => {
-  const fetchProfile = async () => {
-    setIsLoading(true);
-    try {
-      const url = import.meta.env.VITE_API_URL + '/profile';
-      const response = await fetch(url, {
-        method: 'GET',
-        credentials: 'include'
-      });
-
-      if (response.status === 401) {
-        setUserInfo(null);
-        setIsLoading(false);
-        return;
+  // Calculate totals callback
+  const calculateTotals = useCallback(() => {
+    if (!transactions.length) return { totalExpense: 0, totalIncome: 0 };
+    
+    return transactions.reduce((acc, txn) => {
+      if (txn.expense > 0) {
+        acc.totalExpense += txn.expense;
+      } else {
+        acc.totalIncome += Math.abs(txn.expense);
       }
+      return acc;
+    }, { totalExpense: 0, totalIncome: 0 });
+  }, [transactions]);
 
-      const info = await response.json();
-      if (info) {
-        setUserInfo(info);
-        setIncome(info.income || 0);
-      }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-      setUserInfo(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  fetchProfile();
-}, [setUserInfo, setIncome]);
-
-// Add a loading state at the top of your component return
-if (isLoading) {
-  return <div className="loading">Loading...</div>; // Add appropriate loading UI
-}
-
+  // Transactions fetching effect
   useEffect(() => {
     async function getTransactions() {
-     // console.log(income)
-      const url = import.meta.env.VITE_API_URL + '/transactions'
+      setIsLoading(true);
+      const url = import.meta.env.VITE_API_URL + '/transactions';
       try {
-        
         const response = await fetch(url, {
           method: 'GET',
           credentials: 'include'
         });
         if (response.status === 401) {
           setTransactions([]);
-         
+          return null;
         }
-        return await response.json()
+        return await response.json();
       }
       catch (error) {
         console.error("Error fetching transactions:", error);
         setTransactions([]); // Set to empty array on error
         return null;
       }
+      finally {
+        setIsLoading(false);
+      }
     }
+    
     getTransactions().then(transactions => {
       if (Array.isArray(transactions)) {
         setTransactions(transactions);
       } else {
         setTransactions([]);
       }
-    })
-   
+    });
+  }, []);
+
+  // Derived values from state (not hooks, safe to put here)
+  const { totalExpense, totalIncome } = calculateTotals();
+  const balance = income - totalExpense;
+  const recentTransactions = transactions.slice(0, 5);
+
+  // Function declarations
+  function addNewExpense() {
+    setExpenseForm(true);
   }
-    , [setTransactions])
 
-  // Calculate total expenses and income
-  const calculateTotals = useCallback(() => {
-    if (!transactions.length) return { totalExpense: 0, totalIncome: 0 }
-    
-    return transactions.reduce((acc, txn) => {
-      if (txn.expense > 0) {
-        acc.totalExpense += txn.expense
-      } else {
-        acc.totalIncome += Math.abs(txn.expense)
+  function logoutUser() {
+    const url = import.meta.env.VITE_API_URL + '/logout';
+    fetch(url, {
+      method: 'POST',
+      credentials: 'include'
+    }).then((res) => {
+      if (res.ok) {
+        setUserInfo(null);
       }
-      return acc
-    }, { totalExpense: 0, totalIncome: 0 })
-  }, [transactions])
+    });
+    navigate('/signin');
+  }
 
-  const { totalExpense, totalIncome } = calculateTotals()
-  const balance = income - totalExpense
-
-  // Get recent transactions
-  const recentTransactions = transactions.slice(0, 5)
-
-  // Render sidebar content based on active tab
+  // Sidebar content renderer
   const renderSidebarContent = () => {
     switch(activeTab) {
       case 'balance':
@@ -163,7 +118,7 @@ if (isLoading) {
               </span>
             </div>
           </div>
-        )
+        );
       case 'transactions':
       default:
         return (
@@ -187,30 +142,20 @@ if (isLoading) {
               <p className="no-txns">No recent transactions</p>
             )}
           </div>
-        )
+        );
     }
+  };
+
+  // Early returns - must come after all hooks and function declarations
+  if (isLoading) {
+    return <div className="loading">Loading...</div>;
   }
 
-  function addNewExpense() {
-    setExpenseForm(true)
-  }
+  // if (!userInfo || !userInfo.email) {
+  //   return <SignIn />;
+  // }
 
-  function logoutUser() {
-    const url = import.meta.env.VITE_API_URL + '/logout'
-    fetch(url, {
-      method: 'POST',
-      credentials: 'include'
-    }).then((res) => {
-      if (res.ok) {
-        setUserInfo(null)
-      }
-    })
-  }
-
-  if (!userInfo || !userInfo.email) {
-    return <SignIn />;
-  }
-
+  // Main component render
   return (
     <div className="app-container">
       {/* Sidebar Toggle Button */}
@@ -258,54 +203,16 @@ if (isLoading) {
         <div className='expense-items'>
           <div className='transactions-page'>
             <div className='expense-graph'>
-              <h1>Expense Chart</h1>
-              <Chart />
+              {/* <h1>Expense Chart</h1> */}
+              <Chart transactions={transactions}/>
             </div>
-            
-            {/* <div className='transactions-container'>
-              <div className="transactions-header">
-                <h2>All Transactions</h2>
-                <button onClick={addNewExpense} className="add-transaction-btn">
-                  + Add Transaction
-                </button>
-              </div>
-              
-              <div className="transactions-list">
-                {transactions.length > 0 ? (
-                  transactions.map(txn => (
-                    <div key={txn._id} className={`transaction-item ${txn.expense > 0 ? 'expense' : 'income'}`}>
-                      <div className="txn-details">
-                        <div className="txn-category">{txn.category}</div>
-                        <div className="txn-description">{txn.description}</div>
-                        <div className="txn-date">{new Date(txn.datetime).toLocaleDateString()}</div>
-                      </div>
-                      <div className="txn-amount">
-                        <span>{txn.expense > 0 ? '-' : '+'}₹{Math.abs(txn.expense)}</span>
-                        <div className="txn-actions">
-                          <button className="edit-btn" onClick={() => handleEdit(txn._id)}>Edit</button>
-                          <button className="delete-btn" onClick={() => handleDelete(txn._id)}>Delete</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="no-transactions">
-                    <p>No transactions yet. Add your first transaction to get started!</p>
-                    <button onClick={addNewExpense} className="primary-btn">
-                      Add Transaction
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div> */}
-
           </div>
         </div>
       </main>
       
       {showExpenseForm && <Navigate to="/add-new-expense" />}
     </div>
-  )
+  );
 }
 
 export default Transaction
