@@ -19,7 +19,7 @@ function Transaction() {
   const { userInfo, income, setIncome ,setUserInfo} = useContext(UserContext);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
+//console.log(userInfo)
   // All hooks must be declared before any conditional returns
   
   // Toggle sidebar callback
