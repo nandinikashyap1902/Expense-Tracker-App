@@ -143,7 +143,7 @@ const AllTransactions = () => {
         <h1>Transaction History</h1>
         <button 
           className="add-transaction-btn"
-          onClick={() => navigate('/add-transaction')}
+          onClick={() => navigate('/add-new-expense')}
         >
           <FaPlus /> Add Transaction
         </button>
@@ -270,7 +270,7 @@ const AllTransactions = () => {
         <span>Total Income:</span>
         <span className="amount income">
           ₹{filteredTransactions
-            .filter(t => t.transactionType === 'income')
+            .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + Number(t.amount), 0)
             .toFixed(2)}
         </span>
@@ -279,8 +279,8 @@ const AllTransactions = () => {
         <span>Total Expenses:</span>
         <span className="amount expense">
           -₹{filteredTransactions
-            .filter(t => t.transactionType === 'expense')
-            .reduce((sum, t) => sum + Number(t.expense), 0)
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + Number(t.amount), 0)
             .toFixed(2)}
         </span>
       </div>
@@ -289,11 +289,11 @@ const AllTransactions = () => {
         <span className="amount">
           ₹{(
             filteredTransactions
-              .filter(t => t.transactionType === 'income')
+              .filter(t => t.type === 'income')
               .reduce((sum, t) => sum + Number(t.amount), 0) -
             filteredTransactions
-              .filter(t => t.transactionType === 'expense')
-              .reduce((sum, t) => sum + Number(t.expense), 0)
+              .filter(t => t === 'expense')
+              .reduce((sum, t) => sum + Number(t.amount), 0)
           ).toFixed(2)}
         </span>
       </div>

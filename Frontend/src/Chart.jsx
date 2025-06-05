@@ -70,7 +70,7 @@ export function Chart({ transactions }) {
         padding: isMobile ? 2 : 4,
         borderRadius: 3,
         background: theme.palette.background.paper,
-        marginTop: 2,
+        marginTop: 0,
       }}
       component={motion.div}
       initial={{ opacity: 0, y: 50 }}

@@ -202,6 +202,23 @@
   background: #c0392b;
 }
 
+/* Login Button */
+.login-btn {
+  width: 100%;
+  padding: 10px;
+  background: #2ecc71;  /* Green color for positive action */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.login-btn:hover {
+  background: #27ae60;  /* Darker green on hover */
+}
+
 /* Sidebar Toggle Button */
 .sidebar-toggle {
   position: fixed;

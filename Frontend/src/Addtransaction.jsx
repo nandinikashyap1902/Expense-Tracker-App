@@ -147,7 +147,7 @@ const AddTransaction = () => {
   return (
     <div className="add-transaction-container">
       <header className="transaction-header">
-        <div className="header-left">
+        {/* <div className="header-left">
           <button 
             className="back-button" 
             onClick={handleBack}
@@ -156,7 +156,7 @@ const AddTransaction = () => {
             <FaArrowLeft />
           </button>
           <h1>Add Transaction</h1>
-        </div>
+        </div> */}
         <button 
           className="view-all-btn"
           onClick={() => navigate('/transactions')}

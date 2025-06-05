@@ -6,6 +6,10 @@ import { Chart } from './Chart'
 import { FaBars, FaTimes, FaWallet, FaHistory } from 'react-icons/fa';
 import './Sidebar.css' 
 import { useNavigate } from 'react-router-dom'
+//import SignIn from './SignIn'
+//import './AddTransaction.css';
+import{FaList } from 'react-icons/fa';
+
 function Transaction() {
   // All state declarations at the top
   const [transactions, setTransactions] = useState([]);
@@ -14,9 +18,8 @@ function Transaction() {
   const [activeTab, setActiveTab] = useState('transactions');
   const { userInfo, income, setIncome ,setUserInfo} = useContext(UserContext);
   const [isLoading, setIsLoading] = useState(false);
-   const navigate = useNavigate();
-  
-  
+  const navigate = useNavigate();
+
   // All hooks must be declared before any conditional returns
   
   // Toggle sidebar callback
@@ -29,10 +32,10 @@ function Transaction() {
     if (!transactions.length) return { totalExpense: 0, totalIncome: 0 };
     
     return transactions.reduce((acc, txn) => {
-      if (txn.expense > 0) {
-        acc.totalExpense += txn.expense;
+      if (txn.amount > 0) {
+        acc.totalExpense += txn.amount;
       } else {
-        acc.totalIncome += Math.abs(txn.expense);
+        acc.totalIncome += Math.abs(txn.amount);
       }
       return acc;
     }, { totalExpense: 0, totalIncome: 0 });
@@ -93,7 +96,7 @@ function Transaction() {
         setUserInfo(null);
       }
     });
-    navigate('/signin');
+    // navigate('/signin');
   }
 
   // Sidebar content renderer
@@ -133,7 +136,7 @@ function Transaction() {
                       <span className="txn-desc">{txn.description}</span>
                     </div>
                     <span className={`txn-amount ${txn.expense > 0 ? 'expense' : 'income'}`}>
-                      {txn.expense > 0 ? '-' : '+'}₹{Math.abs(txn.expense)}
+                      {txn.expense > 0 ? '-' : '+'}₹{Math.abs(txn.amount)}
                     </span>
                   </li>
                 ))}
@@ -144,6 +147,7 @@ function Transaction() {
           </div>
         );
     }
+    
   };
 
   // Early returns - must come after all hooks and function declarations
@@ -158,53 +162,76 @@ function Transaction() {
   // Main component render
   return (
     <div className="app-container">
-      {/* Sidebar Toggle Button */}
-      <button className="sidebar-toggle" onClick={toggleSidebar}>
-        {isSidebarOpen ? <FaTimes /> : <FaBars />}
-      </button>
+      <header className="transaction-header">
+        {/* Sidebar Toggle Button */}
+        <button className="sidebar-toggle" onClick={toggleSidebar}>
+          {isSidebarOpen ? <FaTimes /> : <FaBars />}
+        </button>
 
-      {/* Sidebar */}
-      <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <div className="user-avatar">
-            {userInfo?.email ? userInfo.email.charAt(0).toUpperCase() : 'U'}
+        {/* Sidebar */}
+        <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+          <div className="sidebar-header">
+            <div className="user-avatar">
+              {userInfo?.email ? userInfo.email.charAt(0).toUpperCase() : 'G'}
+            </div>
+            <div className="user-email">{userInfo?.email || 'Guest User'}</div>
           </div>
-          <div className="user-email">{userInfo.email}</div>
+          
+          <div className="sidebar-tabs">
+            <button 
+              className={activeTab === 'transactions' ? 'active' : ''}
+              onClick={() => setActiveTab('transactions')}
+            >
+              <FaHistory /> Transactions
+            </button>
+            <button 
+              className={activeTab === 'balance' ? 'active' : ''}
+              onClick={() => setActiveTab('balance')}
+            >
+              <FaWallet /> Balance
+            </button>
+          </div>
+          
+          <div className="sidebar-content">
+            {renderSidebarContent()}
+          </div>
+          <div className="sidebar-footer">
+            {userInfo ? (
+              <button onClick={logoutUser} className="logout-btn">
+                Logout
+              </button>
+            ) : (
+              <Link to="/signin" className="login-btn">
+                Sign In
+              </Link>
+            )}
+          </div>
         </div>
         
-        <div className="sidebar-tabs">
+        {/* View All Transactions Button - Right Aligned */}
+        <div style={{ 
+          marginLeft: 'auto', 
+          display: 'flex', 
+          alignItems: 'center', 
+          marginRight: '15px' 
+        }}>
           <button 
-            className={activeTab === 'transactions' ? 'active' : ''}
-            onClick={() => setActiveTab('transactions')}
+            className="view-all-btn"
+            onClick={() => navigate('/transactions')}
+            aria-label="View all transactions"
           >
-            <FaHistory /> Transactions
-          </button>
-          <button 
-            className={activeTab === 'balance' ? 'active' : ''}
-            onClick={() => setActiveTab('balance')}
-          >
-            <FaWallet /> Balance
+            <FaList />
+            <span className="btn-text">View All</span>
           </button>
         </div>
-        
-        <div className="sidebar-content">
-          {renderSidebarContent()}
-        </div>
-        
-        <div className="sidebar-footer">
-          <button onClick={logoutUser} className="logout-btn">
-            Logout
-          </button>
-        </div>
-      </div>
+      </header>
 
       {/* Main Content */}
       <main className={`main-content ${isSidebarOpen ? 'sidebar-open' : ''}`}>
-        <div className='expense-items'>
-          <div className='transactions-page'>
-            <div className='expense-graph'>
-              {/* <h1>Expense Chart</h1> */}
-              <Chart transactions={transactions}/>
+        <div className="expense-container">
+          <div className="transactions-page">
+            <div className="expense-graph">
+              <Chart transactions={transactions} />
             </div>
           </div>
         </div>
