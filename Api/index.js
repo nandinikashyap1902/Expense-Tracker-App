@@ -15,6 +15,13 @@ const mongoose = require("mongoose")
 //     origin: 'http://localhost:5173',
 //     credentials: true, 
 // }
+app.use(cors({
+    origin: ['https://expense-tracker-app-alpha-ebon.vercel.app', 'http://localhost:5173'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+  app.options('*', cors());
 mongoose.connect(process.env.MONGO_URL)
     .then(() => console.log('connected successfully'))
     .catch((err)=>console.log(err))
@@ -28,12 +35,7 @@ app.get('/api/test', (req, res) => {
     res.json('test ok')
 })
 
-app.use(cors({
-  origin: ['https://expense-tracker-app-alpha-ebon.vercel.app/', 'http://localhost:5173'],
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true
-}));
-app.options('*', cors());
+
 function authMiddleware(req, res, next) {
     const { token } = req.cookies
   
