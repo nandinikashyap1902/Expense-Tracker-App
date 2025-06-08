@@ -11,10 +11,10 @@ app.use(cookieParser())
 dotenv.config()
 // const mongoURL = "mongodb+srv://nandinikashyap:cmR4Xn6Rw9U6HcV0@cluster0.mxgfz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 const mongoose = require("mongoose")
-const corsoptions = {
-    origin: 'http://localhost:5173',
-    credentials: true, 
-}
+// const corsoptions = {
+//     origin: 'http://localhost:5173',
+//     credentials: true, 
+// }
 mongoose.connect(process.env.MONGO_URL)
     .then(() => console.log('connected successfully'))
     .catch((err)=>console.log(err))
@@ -22,7 +22,7 @@ mongoose.connect(process.env.MONGO_URL)
 
     
 
-app.use(cors(corsoptions))
+// app.use(cors(corsoptions))
 app.use(express.json())
 app.get('/api/test', (req, res) => {
     res.json('test ok')
