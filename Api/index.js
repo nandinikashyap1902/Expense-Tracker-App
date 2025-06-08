@@ -30,8 +30,10 @@ app.get('/api/test', (req, res) => {
 
 app.use(cors({
   origin: ['https://expense-tracker-app-alpha-ebon.vercel.app/', 'http://localhost:5173'],
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true
 }));
+app.options('*', cors());
 function authMiddleware(req, res, next) {
     const { token } = req.cookies
   
