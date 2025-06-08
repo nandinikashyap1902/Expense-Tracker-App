@@ -196,7 +196,7 @@ function Transaction() {
             {renderSidebarContent()}
           </div>
           <div className="sidebar-footer">
-            {userInfo ? (
+            {userInfo && userInfo.email ? (
               <button onClick={logoutUser} className="logout-btn">
                 Logout
               </button>

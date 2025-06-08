@@ -172,7 +172,8 @@ app.post('/api/signin', async (req, res) => {
                 } 
                 res.cookie('token', token, {
                     httpOnly: true,  
-                    secure: false,
+                   secure: process.env.NODE_ENV === 'production', // true in production
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
                     
                 })
        
@@ -201,7 +202,7 @@ app.get('/api/profile', async (req, res) => {
         
         try {
             const user = await User.findById(info.id);
-            res.json({ income: user.income });
+            res.json({ income: user.income, email: user.email });
         } catch (error) {
             res.status(500).json({ error: 'Failed to fetch income.' });
         }
