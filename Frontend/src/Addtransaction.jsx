@@ -1,11 +1,15 @@
-import React, { useState, useContext } from 'react';
-import { UserContext } from './UserContext';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { addExpense } from './Store/Slices/expenseSlice';
+import { updateIncomeLocal } from './Store/Slices/authSlice';
 import { FaArrowLeft, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaTag, FaAlignLeft, FaRupeeSign, FaList } from 'react-icons/fa';
-import './AddTransaction.css'; // We'll create this file
+import './AddTransaction.css';
 
 const AddTransaction = () => {
-  const { userInfo, income, setIncome } = useContext(UserContext);
+  const dispatch = useDispatch();
+  const { income, user } = useSelector(state => state.auth);
+  const { isLoading } = useSelector(state => state.expenses);
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -16,8 +20,6 @@ const AddTransaction = () => {
     type: 'expense' // 'expense' or 'income'
   });
   
-  const [transactions, setTransactions] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
   const categories = [
@@ -54,7 +56,6 @@ const AddTransaction = () => {
       return;
     }
     
-    setIsSubmitting(true);
     setError('');
     
     try {
@@ -63,47 +64,22 @@ const AddTransaction = () => {
         amount: parseFloat(formData.amount),
         category: formData.category,
         description: formData.description || '',
-        datetime: new Date(formData.date).toISOString(),
-        type: formData.type
+        date: new Date(formData.date).toISOString(),
+        expense: formData.type === 'expense' // true for expense, false for income
       };
       
-      // Make API call to save the transaction
-      // const url = import.meta.env.VITE_API_URL + '/signup'
-      // const response = await fetch(url, {
-      //     method: 'POST',
-      //     headers: { 'Content-Type': 'application/json' },
-      //     body: JSON.stringify({
-      //         email: email,
-      //         password: password,
-      //         income: Number(income)
-      //     })
-      // });
-      //transaction
-      const url = import.meta.env.VITE_API_URL + '/transaction'
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authentication token if needed
-          // 'Authorization': `Bearer ${userInfo?.token}`
-        },
-        body: JSON.stringify(transactionData),
-        credentials: 'include' // Include cookies if using session-based auth
-      });
+      // Dispatch the action to add the expense using Redux
+      const result = await dispatch(addExpense(transactionData));
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to save transaction');
+      if (result.error) {
+        throw new Error(result.payload || 'Failed to save transaction');
       }
       
-      const savedTransaction = await response.json();
-      
-      // Update local state with the saved transaction
-      setTransactions(prev => [savedTransaction, ...prev]);
-      
-      // Update balance based on transaction type
-      const amount = parseFloat(formData.amount);
-      setIncome(prev => formData.type === 'expense' ? prev - amount : prev + amount);
+      // Update income if needed (for tracking purposes)
+      if (formData.type === 'income') {
+        const newIncome = income + parseFloat(formData.amount);
+        dispatch(updateIncomeLocal(newIncome));
+      }
       
       // Reset form
       setFormData({
@@ -114,49 +90,22 @@ const AddTransaction = () => {
         type: 'expense'
       });
       
-      // Show success message or redirect if needed
-      // navigate('/transactions'); // Uncomment to redirect after successful save
+      // Navigate to transactions list
+      navigate('/transactions');
       
     } catch (err) {
       setError(err.message || 'Failed to add transaction. Please try again.');
       console.error('Error adding transaction:', err);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const handleDelete = (id) => {
-    // Find the transaction to get its amount and type
-    const transaction = transactions.find(t => t.id === id);
-    if (!transaction) return;
-    
-    // Update balance when deleting
-    if (transaction.type === 'expense') {
-      setIncome(prev => prev + transaction.amount);
-    } else {
-      setIncome(prev => prev - transaction.amount);
-    }
-    
-    // Remove from transactions
-    setTransactions(transactions.filter(t => t.id !== id));
-  };
   const handleBack = () => {
-    // Instead of using navigate(-1), explicitly navigate to the home page
     navigate('/');
   };
+  
   return (
     <div className="add-transaction-container">
       <header className="transaction-header">
-        {/* <div className="header-left">
-          <button 
-            className="back-button" 
-            onClick={handleBack}
-            aria-label="Go back"
-          >
-            <FaArrowLeft />
-          </button>
-          <h1>Add Transaction</h1>
-        </div> */}
         <button 
           className="view-all-btn"
           onClick={() => navigate('/transactions')}
@@ -201,44 +150,44 @@ const AddTransaction = () => {
               </div>
             )}
             
+            <div className="form-group amount-group">
+              <span className="currency-symbol">₹</span>
+              <input
+                type="text"
+                name="amount"
+                value={formData.amount}
+                onChange={handleChange}
+                placeholder="0"
+                className="amount-input"
+                required
+              />
+            </div>
+            
             <div className="form-group">
-              <label htmlFor="amount" className="input-label">
-                <FaRupeeSign className="input-icon" />
-                Amount
-              </label>
-              <div className="amount-wrapper">
-                <span className="input-prefix">₹</span>
+              <div className="input-with-icon">
+                <FaCalendarAlt className="input-icon" />
                 <input
-                  type="number"
-                  id="amount"
-                  name="amount"
-                  value={formData.amount}
+                  type="datetime-local"
+                  name="date"
+                  value={formData.date}
                   onChange={handleChange}
-                  placeholder="0.00"
-                  min="1"
-                  step="0.01"
+                  className="form-control"
                   required
-                  className="amount-input"
-                  inputMode="decimal"
                 />
               </div>
             </div>
             
             <div className="form-group">
-              <label htmlFor="category" className="input-label">
+              <div className="input-with-icon">
                 <FaTag className="input-icon" />
-                Category
-              </label>
-              <div className="select-wrapper">
                 <select
-                  id="category"
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
+                  className="form-control"
                   required
-                  className="category-select"
                 >
-                  <option value="">Select a category</option>
+                  <option value="">Select Category</option>
                   {categories.map(cat => (
                     <option key={cat.value} value={cat.value}>
                       {cat.icon} {cat.label}
@@ -249,43 +198,25 @@ const AddTransaction = () => {
             </div>
             
             <div className="form-group">
-              <label htmlFor="date" className="input-label">
-                <FaCalendarAlt className="input-icon" />
-                Date & Time
-              </label>
-              <input
-                type="datetime-local"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                required
-                className="datetime-input"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="description" className="input-label">
+              <div className="input-with-icon">
                 <FaAlignLeft className="input-icon" />
-                Description (Optional)
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Add a note..."
-                className="description-input"
-                rows="3"
-              />
+                <input
+                  type="text"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Description (optional)"
+                  className="form-control"
+                />
+              </div>
             </div>
             
-            <button 
-              type="submit" 
-              className="submit-btn" 
-              disabled={isSubmitting}
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={isLoading}
             >
-              {isSubmitting ? 'Adding...' : 'Add Transaction'}
+              {isLoading ? 'Saving...' : 'Add Transaction'}
             </button>
           </form>
         </div>

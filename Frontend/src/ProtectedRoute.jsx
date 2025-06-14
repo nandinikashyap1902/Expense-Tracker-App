@@ -1,15 +1,14 @@
 // Create a new file: src/components/ProtectedRoute.jsx
-import { useContext } from 'react';
+import { useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
-import { UserContext } from './UserContext';
 
 const ProtectedRoute = ({ children }) => {
-  const { userInfo } = useContext(UserContext);
+  const { isAuthenticated, user } = useSelector(state => state.auth);
   
   // If user is not logged in, redirect to signin
-  // if (!userInfo || !userInfo.email) {
-  //   return <Navigate to="/signin" replace />;
-  // }
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/signin" replace />;
+  }
 
   return children;
 };

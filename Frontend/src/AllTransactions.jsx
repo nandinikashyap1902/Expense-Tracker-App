@@ -1,14 +1,18 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserContext } from './UserContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchExpenses, deleteExpense } from './Store/Slices/expenseSlice';
 import { FaFilter, FaSortAmountDown, FaSortAmountUp, FaSearch, FaPlus, FaTrash, FaEdit } from 'react-icons/fa';
 import './AllTransactions.css';
 
 const AllTransactions = () => {
-  const [transactions, setTransactions] = useState([]);
+  // Get transactions from Redux store
+  const dispatch = useDispatch();
+  const { items: transactions, isLoading: loading, error: fetchError } = useSelector(state => state.expenses);
+  const { user } = useSelector(state => state.auth);
+  
+  // Local state for UI management
   const [filteredTransactions, setFilteredTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     type: 'all', // 'all', 'income', 'expense'
@@ -17,40 +21,22 @@ const AllTransactions = () => {
     sortOrder: 'desc',
   });
   
-  const { userInfo } = useContext(UserContext);
   const navigate = useNavigate();
 
-  // Fetch transactions
+  // Fetch transactions using Redux action
   useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/transactions`, {
-       
-         method: 'GET',
-          credentials: 'include'
-        });
+    dispatch(fetchExpenses());
+  }, [dispatch]);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch transactions');
-        }
-
-        const data = await response.json();
-        setTransactions(data);
-        setFilteredTransactions(data);
-      } catch (err) {
-        setError(err.message || 'Error fetching transactions');
-        console.error('Fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTransactions();
-  }, []);
+  // Apply filters and sorting when transactions change
+  useEffect(() => {
+    if (transactions && transactions.length > 0) {
+      applyFiltersAndSearch();
+    }
+  }, [transactions, searchTerm, filters]);
 
   // Apply filters and sorting
-  useEffect(() => {
+  const applyFiltersAndSearch = () => {
     let result = [...transactions];
 
     // Apply search
@@ -58,15 +44,18 @@ const AllTransactions = () => {
       const term = searchTerm.toLowerCase();
       result = result.filter(
         (t) =>
-          t.description?.toLowerCase().includes(term) ||
-          t.category?.toLowerCase().includes(term) ||
-          t.amount.toString().includes(term)
+          t.description.toLowerCase().includes(term) ||
+          t.category.toLowerCase().includes(term)
       );
     }
 
     // Apply type filter
     if (filters.type !== 'all') {
-      result = result.filter((t) => t.transactionType === filters.type);
+      if (filters.type === 'income') {
+        result = result.filter((t) => !t.expense);
+      } else {
+        result = result.filter((t) => t.expense);
+      }
     }
 
     // Apply category filter
@@ -76,228 +65,217 @@ const AllTransactions = () => {
 
     // Apply sorting
     result.sort((a, b) => {
-      let comparison = 0;
+      let valueA, valueB;
       
+      // Handle different sort fields
       switch (filters.sortBy) {
         case 'amount':
-          comparison = a.amount - b.amount;
-          break;
-        case 'date':
-          comparison = new Date(a.datetime) - new Date(b.datetime);
+          valueA = a.amount;
+          valueB = b.amount;
           break;
         case 'category':
-          comparison = (a.category || '').localeCompare(b.category || '');
+          valueA = a.category.toLowerCase();
+          valueB = b.category.toLowerCase();
           break;
+        case 'date':
         default:
+          valueA = new Date(a.date);
+          valueB = new Date(b.date);
           break;
       }
-
-      return filters.sortOrder === 'asc' ? comparison : -comparison;
+      
+      // Apply sort order
+      if (filters.sortOrder === 'asc') {
+        return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+      } else {
+        return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+      }
     });
 
     setFilteredTransactions(result);
-  }, [transactions, searchTerm, filters]);
+  };
 
-  // Get unique categories for filter dropdown
-  const categories = ['all', ...new Set(transactions.map((t) => t.category).filter(Boolean))];
+  // Handle delete transaction using Redux action
+  const handleDeleteTransaction = async (id) => {
+    if (window.confirm('Are you sure you want to delete this transaction?')) {
+      await dispatch(deleteExpense(id));
+      // The list will update automatically via the useEffect that depends on transactions
+    }
+  };
+
+  // Get all available categories from transactions
+  const getCategories = () => {
+    const categories = transactions.map((t) => t.category);
+    return ['all', ...new Set(categories)];
+  };
+  
+  // Handle sort change
+  const handleSortChange = (sortBy) => {
+    if (filters.sortBy === sortBy) {
+      // Toggle sort order if clicking the same column
+      setFilters({
+        ...filters,
+        sortOrder: filters.sortOrder === 'asc' ? 'desc' : 'asc',
+      });
+    } else {
+      // Set new sort column with default desc order
+      setFilters({
+        ...filters,
+        sortBy,
+        sortOrder: 'desc',
+      });
+    }
+  };
 
   // Format date for display
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
-  // Toggle sort order
-  const toggleSortOrder = (field) => {
-    setFilters((prev) => ({
-      ...prev,
-      sortBy: field,
-      sortOrder: prev.sortBy === field && prev.sortOrder === 'asc' ? 'desc' : 'asc',
-    }));
-  };
-
-  // Get sort icon
-  const getSortIcon = (field) => {
-    if (filters.sortBy !== field) return null;
-    return filters.sortOrder === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />;
-  };
-
+  // Display loading spinner
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
+      <div className="transactions-container loading-container">
+        <div className="loading-spinner"></div>
         <p>Loading transactions...</p>
       </div>
     );
   }
 
+  // Display error message
+  if (fetchError) {
+    return (
+      <div className="transactions-container error-container">
+        <p className="error-message">Error: {fetchError}</p>
+        <button className="retry-button" onClick={() => dispatch(fetchExpenses())}>
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="transactions-container">
       <div className="transactions-header">
-        <h1>Transaction History</h1>
-        <button 
-          className="add-transaction-btn"
-          onClick={() => navigate('/add-new-expense')}
-        >
-          <FaPlus /> Add Transaction
+        <h1>All Transactions</h1>
+        <button className="add-transaction-btn" onClick={() => navigate('/add-new-expense')}>
+          <FaPlus /> Add New
         </button>
       </div>
 
-      <div className="filters-container">
-        <div className="search-box">
+      <div className="transactions-controls">
+        {/* Search */}
+        <div className="search-container">
           <FaSearch className="search-icon" />
           <input
             type="text"
             placeholder="Search transactions..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
           />
         </div>
 
-        <div className="filter-group">
-          <label>Type:</label>
-          <select
-            value={filters.type}
-            onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-          >
-            <option value="all">All Types</option>
-            <option value="income">Income</option>
-            <option value="expense">Expense</option>
-          </select>
+        {/* Filter controls */}
+        <div className="filter-container">
+          <div className="filter-group">
+            <label>
+              <FaFilter /> Type:
+              <select
+                value={filters.type}
+                onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+              >
+                <option value="all">All</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="filter-group">
+            <label>
+              <FaFilter /> Category:
+              <select
+                value={filters.category}
+                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+              >
+                {getCategories().map((category) => (
+                  <option key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
+      </div>
 
-        <div className="filter-group">
-          <label>Category:</label>
-          <select
-            value={filters.category}
-            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-          >
-            <option value="all">All Categories</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </option>
-            ))}
-          </select>
+      {/* Transactions table */}
+      {filteredTransactions.length === 0 ? (
+        <div className="no-transactions">
+          <p>No transactions found. Add a new transaction or adjust your filters.</p>
         </div>
-      </div>
-
-      {error && <div className="error-message">{error}</div>}
-
-      <div className="transactions-list">
-        <div className="transactions-header-row">
-          <div 
-            className="header-cell date" 
-            onClick={() => toggleSortOrder('date')}
-          >
-            Date {getSortIcon('date')}
-          </div>
-          <div 
-            className="header-cell description"
-            onClick={() => toggleSortOrder('description')}
-          >
-            Description {getSortIcon('description')}
-          </div>
-          <div 
-            className="header-cell category"
-            onClick={() => toggleSortOrder('category')}
-          >
-            Category {getSortIcon('category')}
-          </div>
-          <div 
-            className="header-cell amount"
-            onClick={() => toggleSortOrder('amount')}
-          >
-            Amount {getSortIcon('amount')}
-          </div>
-          <div className="header-cell actions">Actions</div>
+      ) : (
+        <div className="transactions-table-container">
+          <table className="transactions-table">
+            <thead>
+              <tr>
+                <th onClick={() => handleSortChange('date')} className="sortable-header">
+                  Date
+                  {filters.sortBy === 'date' && (
+                    filters.sortOrder === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />
+                  )}
+                </th>
+                <th>Description</th>
+                <th onClick={() => handleSortChange('category')} className="sortable-header">
+                  Category
+                  {filters.sortBy === 'category' && (
+                    filters.sortOrder === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />
+                  )}
+                </th>
+                <th onClick={() => handleSortChange('amount')} className="sortable-header">
+                  Amount
+                  {filters.sortBy === 'amount' && (
+                    filters.sortOrder === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />
+                  )}
+                </th>
+                <th>Type</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredTransactions.map((transaction) => (
+                <tr key={transaction._id} className={transaction.expense ? 'expense-row' : 'income-row'}>
+                  <td>{formatDate(transaction.date)}</td>
+                  <td>{transaction.description}</td>
+                  <td>{transaction.category}</td>
+                  <td className="amount-cell">₹{transaction.amount.toFixed(2)}</td>
+                  <td>{transaction.expense ? 'Expense' : 'Income'}</td>
+                  <td className="actions-cell">
+                    <button
+                      onClick={() => navigate(`/edit-transaction/${transaction._id}`)}
+                      className="edit-btn"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTransaction(transaction._id)}
+                      className="delete-btn"
+                    >
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-
-        {filteredTransactions.length === 0 ? (
-          <div className="no-transactions">
-            <p>No transactions found. Add a new transaction to get started!</p>
-          </div>
-        ) : (
-          filteredTransactions.map((transaction) => (
-            <div 
-              key={transaction._id} 
-              className={`transaction-row ${transaction.transactionType}`}
-            >
-              <div className="transaction-cell date">
-                {formatDate(transaction.datetime)}
-              </div>
-              <div className="transaction-cell description">
-                {transaction.description || 'No description'}
-              </div>
-              <div className="transaction-cell category">
-                {transaction.category || 'Uncategorized'}
-              </div>
-              <div className="transaction-cell amount">
-                <span className={`amount ${transaction.transactionType}`}>
-                  {transaction.transactionType === 'expense' ? '-' : '+'}
-                  ₹{Number(transaction.transactionType === 'expense' ? transaction.expense : transaction.amount).toFixed(2)}
-                </span>
-              </div>
-              <div className="transaction-cell actions">
-                <button 
-                  className="icon-btn edit-btn" 
-                  onClick={() => navigate(`/edit-transaction/${transaction._id}`)}
-                  aria-label="Edit transaction"
-                >
-                  <FaEdit />
-                </button>
-                <button 
-                  className="icon-btn delete-btn"
-                  onClick={() => handleDelete(transaction._id)}
-                  aria-label="Delete transaction"
-                >
-                  <FaTrash />
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-    <div className="transactions-summary">
-      <div className="summary-item">
-        <span>Total Income:</span>
-        <span className="amount income">
-          ₹{filteredTransactions
-            .filter(t => t.type === 'income')
-            .reduce((sum, t) => sum + Number(t.amount), 0)
-            .toFixed(2)}
-        </span>
-      </div>
-      <div className="summary-item">
-        <span>Total Expenses:</span>
-        <span className="amount expense">
-          -₹{filteredTransactions
-            .filter(t => t.type === 'expense')
-            .reduce((sum, t) => sum + Number(t.amount), 0)
-            .toFixed(2)}
-        </span>
-      </div>
-      <div className="summary-item total">
-        <span>Net Total:</span>
-        <span className="amount">
-          ₹{(
-            filteredTransactions
-              .filter(t => t.type === 'income')
-              .reduce((sum, t) => sum + Number(t.amount), 0) -
-            filteredTransactions
-              .filter(t => t === 'expense')
-              .reduce((sum, t) => sum + Number(t.amount), 0)
-          ).toFixed(2)}
-        </span>
-      </div>
-    </div>
+      )}
     </div>
   );
 };
