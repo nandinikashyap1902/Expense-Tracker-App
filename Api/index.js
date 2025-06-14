@@ -53,6 +53,29 @@ function authMiddleware(req, res, next) {
       res.status(401).json({ message: 'Token is invalid or expired.' });
     }
   }
+
+  function adminMiddleware(req, res, next) {
+    const { token } = req.cookies;
+  
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized access. No token provided.' });
+    }
+  
+    try {
+      const decoded = jwt.verify(token, process.env.SECRET_KEY);
+      
+      // Check if user has admin role
+      if (decoded.role !== 'admin') {
+        return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+      }
+      
+      req.user = decoded;
+      next();
+    } catch (err) {
+      console.error('Admin verification error:', err);
+      res.status(401).json({ message: 'Token is invalid or expired.' });
+    }
+  }
 app.post('/api/transaction', async (req, res) => {
     try {
         const { token } = req.cookies;
@@ -169,7 +192,7 @@ app.post('/api/signin', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials.' });
         }
         jwt.sign(
-            { email, id: userEmail._id}, process.env.SECRET_KEY, { expiresIn: '1h' }, (err, token) => {
+            { email, id: userEmail._id, role: userEmail.role}, process.env.SECRET_KEY, { expiresIn: '1h' }, (err, token) => {
                 if (err) {
                     console.error('JWT signing error:', err);
                     return res.status(500).json({ message: 'Authentication failed. Please try again.' });
@@ -181,7 +204,13 @@ app.post('/api/signin', async (req, res) => {
                     
                 })
        
-            .json({ id: userEmail._id, userEmail }) }) 
+            .json({ 
+                id: userEmail._id, 
+                email: userEmail.email, 
+                income: userEmail.income, 
+                role: userEmail.role 
+            }) 
+        }) 
     }
     
         catch (err) {
@@ -191,7 +220,23 @@ app.post('/api/signin', async (req, res) => {
        // res.json()
 })
 
-
+function authMiddleware(req, res, next) {
+    const { token } = req.cookies
+  
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized access. No token provided.' });
+    }
+  
+    try {
+     
+      const decoded = jwt.verify(token, process.env.SECRET_KEY); 
+      req.user = decoded;
+      next(); 
+    } catch (err) {
+      console.error('Token verification error:', err);
+      res.status(401).json({ message: 'Token is invalid or expired.' });
+    }
+  }
 app.get('/api/profile', async (req, res) => {
     const { token } = req.cookies;
     //console.log(token)
@@ -206,13 +251,15 @@ app.get('/api/profile', async (req, res) => {
         
         try {
             const user = await User.findById(info.id);
-            res.json({ income: user.income, email: user.email });
+            res.json({ income: user.income, email: user.email,role: user.role,
+                id: user._id });
         } catch (error) {
             res.status(500).json({ error: 'Failed to fetch income.' });
         }
     })
     // res.json({income})
 }) 
+
 
 
 app.post('/api/logout', (req, res) => {
@@ -283,6 +330,27 @@ app.get('/api/transaction/:id', async(req, res) => {
   const transaction = await Transaction.findById(id)
     res.json(transaction)
 })
+
+
+app.get('/api/admin/users', adminMiddleware, async (req, res) => {
+    try {
+      const users = await User.find({ role: 'user' });
+      res.json(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+app.get('/api/admin/transactions', adminMiddleware, async (req, res) => {
+    try {
+      const transactions = await Transaction.find({ author: req.user.id });
+      res.json(transactions);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
 app.listen(5000, () => {
     console.log('i am running')
 })

@@ -1,103 +1,63 @@
 import './App.css'
 import { Navigate, Link } from 'react-router-dom'
-import { useState, useEffect, useContext, useCallback } from 'react'
-import { UserContext } from './UserContext'
+import { useState, useEffect, useCallback } from 'react'
 import { Chart } from './Chart'
 import { FaBars, FaTimes, FaWallet, FaHistory } from 'react-icons/fa';
 import './Sidebar.css' 
 import { useNavigate } from 'react-router-dom'
-//import SignIn from './SignIn'
-//import './AddTransaction.css';
-import{FaList } from 'react-icons/fa';
+import { FaList } from 'react-icons/fa';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchExpenses, calculateTotals } from './Store/Slices/expenseSlice';
+import { logoutUser, updateIncomeLocal } from './Store/Slices/authSlice';
 
 function Transaction() {
-  // All state declarations at the top
-  const [transactions, setTransactions] = useState([]);
+  // Redux hooks
+  const dispatch = useDispatch();
+  const { items: transactions, isLoading, totalIncome, totalExpense, balance } = useSelector(state => state.expenses);
+  const { user, income, isAuthenticated } = useSelector(state => state.auth);
+  
+  // Local state
   const [showExpenseForm, setExpenseForm] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('transactions');
-  const { userInfo, income, setIncome ,setUserInfo} = useContext(UserContext);
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-//console.log(userInfo)
-  // All hooks must be declared before any conditional returns
   
+  const navigate = useNavigate();
+
   // Toggle sidebar callback
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(!isSidebarOpen);
   }, [isSidebarOpen]);
 
-  // Calculate totals callback
-  const calculateTotals = useCallback(() => {
-    if (!transactions.length) return { totalExpense: 0, totalIncome: 0 };
-    
-    return transactions.reduce((acc, txn) => {
-      if (txn.amount > 0) {
-        acc.totalExpense += txn.amount;
-      } else {
-        acc.totalIncome += Math.abs(txn.amount);
-      }
-      return acc;
-    }, { totalExpense: 0, totalIncome: 0 });
-  }, [transactions]);
-
-  // Transactions fetching effect
+  // Fetch transactions using Redux
   useEffect(() => {
-    async function getTransactions() {
-      setIsLoading(true);
-      const url = import.meta.env.VITE_API_URL + '/transactions';
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          credentials: 'include'
-        });
-        if (response.status === 401) {
-          setTransactions([]);
-          return null;
-        }
-        return await response.json();
-      }
-      catch (error) {
-        console.error("Error fetching transactions:", error);
-        setTransactions([]); // Set to empty array on error
-        return null;
-      }
-      finally {
-        setIsLoading(false);
-      }
-    }
-    
-    getTransactions().then(transactions => {
-      if (Array.isArray(transactions)) {
-        setTransactions(transactions);
-      } else {
-        setTransactions([]);
-      }
-    });
-  }, []);
+    dispatch(fetchExpenses());
+  }, [dispatch]);
 
-  // Derived values from state (not hooks, safe to put here)
-  const { totalExpense, totalIncome } = calculateTotals();
-  const balance = income - totalExpense;
+  // Calculate totals using Redux
+  useEffect(() => {
+    if (transactions.length > 0) {
+      dispatch(calculateTotals());
+    }
+  }, [transactions, dispatch]);
+
+  // Derived values
   const recentTransactions = transactions.slice(0, 5);
+  const reduxBalance = income - totalExpense;
 
   // Function declarations
   function addNewExpense() {
     setExpenseForm(true);
   }
 
-  function logoutUser() {
-    const url = import.meta.env.VITE_API_URL + '/logout';
-    fetch(url, {
-      method: 'POST',
-      credentials: 'include'
-    }).then((res) => {
-      if (res.ok) {
-        setUserInfo(null);
-      }
-    });
+  function handleLogout() {
+    dispatch(logoutUser());
     // navigate('/signin');
   }
+
+  // Function to update income (if needed in this component)
+  const updateIncome = (newIncome) => {
+    dispatch(updateIncomeLocal(newIncome));
+  };
 
   // Sidebar content renderer
   const renderSidebarContent = () => {
@@ -116,8 +76,8 @@ function Transaction() {
             </div>
             <div className="balance-total">
               <span>Available Balance:</span>
-              <span className={balance >= 0 ? 'positive' : 'negative'}>
-                ₹{Math.abs(balance)} {balance < 0 ? '(Overdraft)' : ''}
+              <span className={reduxBalance >= 0 ? 'positive' : 'negative'}>
+                ₹{Math.abs(reduxBalance)} {reduxBalance < 0 ? '(Overdraft)' : ''}
               </span>
             </div>
           </div>
@@ -155,8 +115,8 @@ function Transaction() {
     return <div className="loading">Loading...</div>;
   }
 
-  // if (!userInfo || !userInfo.email) {
-  //   return <SignIn />;
+  // if (!isAuthenticated) {
+  //   return <Navigate to="/signin" />;
   // }
 
   // Main component render
@@ -172,9 +132,9 @@ function Transaction() {
         <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <div className="user-avatar">
-              {userInfo?.email ? userInfo.email.charAt(0).toUpperCase() : 'G'}
+              {user?.email ? user.email.charAt(0).toUpperCase() : 'G'}
             </div>
-            <div className="user-email">{userInfo?.email || 'Guest User'}</div>
+            <div className="user-email">{user?.email || 'Guest User'}</div>
           </div>
           
           <div className="sidebar-tabs">
@@ -196,8 +156,8 @@ function Transaction() {
             {renderSidebarContent()}
           </div>
           <div className="sidebar-footer">
-            {userInfo && userInfo.email ? (
-              <button onClick={logoutUser} className="logout-btn">
+            {isAuthenticated ? (
+              <button onClick={handleLogout} className="logout-btn">
                 Logout
               </button>
             ) : (

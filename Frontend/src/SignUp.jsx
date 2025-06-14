@@ -1,68 +1,55 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import './App.css'
 import { useNavigate, Link } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux"
+import { registerUser, clearAuthError } from "./Store/Slices/authSlice"
 
 function SignUp() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [income, setIncome] = useState('')
-    const [error, setError] = useState('')
-    const [isSubmitting, setIsSubmitting] = useState(false)
+    
+    const dispatch = useDispatch()
+    const { isLoading, error, isAuthenticated } = useSelector(state => state.auth)
     const navigate = useNavigate();
+
+    // Clear any auth errors when component mounts
+    useEffect(() => {
+        dispatch(clearAuthError());
+    }, [dispatch]);
+    
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/');
+        }
+    }, [isAuthenticated, navigate]);
 
     async function signUpUser(ev) {
         ev.preventDefault();
-        setError(''); // Clear previous errors
         
         // Basic validation
         if (!email || !password || !income) {
-            setError('All fields are required');
             return;
         }
 
         if (income <= 0) {
-            setError('Income must be greater than 0');
             return;
         }
 
-        setIsSubmitting(true);
+        // Dispatch registration action
+        const result = await dispatch(registerUser({
+            email,
+            password,
+            income: Number(income)
+        }));
         
-        try {
-            const url = import.meta.env.VITE_API_URL + '/signup'
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: email,
-                    password: password,
-                    income: Number(income)
-                })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                // Check for duplicate email error
-                if (response.status === 400 && data.message && data.message.includes('already exists')) {
-                    throw new Error('An account with this email already exists. Please use a different email or sign in.');
-                }
-                throw new Error(data.message || 'Failed to create account. Please try again.');
-            }
-
-            // Clear form and navigate to sign-in on success
-            setEmail('');
-            setPassword('');
-            setIncome('');
-            navigate('/signin');
-            
-        } catch (err) {
-            console.error('Signup error:', err);
-            setError(err.message || 'An error occurred. Email might already be in use.');
-        } finally {
-            setIsSubmitting(false);
+        // If registration was successful, redirect to home page
+        // The auth slice will handle saving the user to localStorage
+        if (!result.error) {
+            navigate('/');
         }
     }
-
 
     return (
         <div className="card">
@@ -101,6 +88,7 @@ function SignUp() {
                     onChange={ev => setEmail(ev.target.value)} 
                     value={email} 
                     className="input-field" 
+                    disabled={isLoading}
                 />
                 <input 
                     type="password" 
@@ -110,6 +98,7 @@ function SignUp() {
                     value={password} 
                     className="input-field" 
                     minLength={6}
+                    disabled={isLoading}
                 />
                 <input
                     type="number"
@@ -120,13 +109,14 @@ function SignUp() {
                     className="input-field"
                     min="1"
                     step="0.01"
+                    disabled={isLoading}
                 />
                 
                 <button 
                     className="signup-button" 
-                    disabled={isSubmitting}
+                    disabled={isLoading}
                 >
-                    {isSubmitting ? 'Creating Account...' : 'Sign Up'}
+                    {isLoading ? 'Creating Account...' : 'Sign Up'}
                 </button>
             </form>
             

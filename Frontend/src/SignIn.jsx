@@ -1,48 +1,47 @@
-import { useState } from "react"
-import { UserContext } from "./UserContext";
-import { useContext } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import './App.css'
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser, clearAuthError } from "./Store/Slices/authSlice";
+import './App.css';
 
 function SignIn() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const {setUserInfo} = useContext(UserContext)
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
+  const dispatch = useDispatch();
+  const { isLoading, error, isAuthenticated, user } = useSelector(state => state.auth);
   const navigate = useNavigate();
+
+  // Add debugging log to see state changes
+  useEffect(() => {
+    console.log("Auth state changed:", { isAuthenticated, isLoading, hasUser: !!user });
+  }, [isAuthenticated, isLoading, user]);
+
+  // Clear any auth errors when component mounts
+  useEffect(() => {
+    dispatch(clearAuthError());
+  }, [dispatch]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log("Redirecting to home page...");
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   async function signInUser(ev) {
     ev.preventDefault();
-    setError(''); // Clear previous errors
-    const url = import.meta.env.VITE_API_URL + '/signin'
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include'
-      });
-  
-      if (response.ok) {
-        // Fetch the profile data after successful login
-        const profileResponse = await fetch(import.meta.env.VITE_API_URL + '/profile', {
-          credentials: 'include'
-        });
-        
-        if (profileResponse.ok) {
-          const profileData = await profileResponse.json();
-          setUserInfo(profileData);
-          navigate('/');
-        } else {
-          throw new Error('Failed to fetch profile data');
-        }
-      } else {
-        const data = await response.json();
-        setError(data.message || 'Invalid email or password');
+      const resultAction = await dispatch(loginUser({ email, password }));
+      console.log("Login result:", resultAction);
+      
+      if (!resultAction.error) {
+        // Force navigation on success even if state update is delayed
+        navigate('/', { replace: true });
       }
     } catch (err) {
-      console.error(err);
-      setError(err.message || 'An error occurred. Please try again.');
+      console.error("Login error:", err);
     }
   }
 
@@ -62,6 +61,7 @@ function SignIn() {
           onChange={ev => setEmail(ev.target.value)} 
           value={email} 
           className="input-field" 
+          disabled={isLoading}
         />
         <input 
           type="password" 
@@ -70,13 +70,16 @@ function SignIn() {
           onChange={ev => setPassword(ev.target.value)} 
           value={password} 
           className="input-field" 
+          disabled={isLoading}
         />
-        <button className="signup-button">Sign In</button>
+        <button className="signup-button" disabled={isLoading}>
+          {isLoading ? 'Signing in...' : 'Sign In'}
+        </button>
       </form>
       <h1>OR</h1>
       <Link to="/signup" style={{textDecoration:'underline'}}>Sign Up</Link>
     </div>
-  )
+  );
 }
 
-export default SignIn
+export default SignIn;
