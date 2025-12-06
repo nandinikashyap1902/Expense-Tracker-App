@@ -4,11 +4,11 @@ import { useState, useEffect, useContext, useCallback } from 'react'
 import { UserContext } from './UserContext'
 import { Chart } from './Chart'
 import { FaBars, FaTimes, FaWallet, FaHistory } from 'react-icons/fa';
-import './Sidebar.css' 
+import './Sidebar.css'
 import { useNavigate } from 'react-router-dom'
 //import SignIn from './SignIn'
 //import './AddTransaction.css';
-import{FaList } from 'react-icons/fa';
+import { FaList } from 'react-icons/fa';
 
 function Transaction() {
   // All state declarations at the top
@@ -16,12 +16,12 @@ function Transaction() {
   const [showExpenseForm, setExpenseForm] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('transactions');
-  const { userInfo, income, setIncome ,setUserInfo} = useContext(UserContext);
+  const { userInfo, income, setIncome, setUserInfo } = useContext(UserContext);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-//console.log(userInfo)
+  //console.log(userInfo)
   // All hooks must be declared before any conditional returns
-  
+
   // Toggle sidebar callback
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -29,16 +29,20 @@ function Transaction() {
 
   // Calculate totals callback
   const calculateTotals = useCallback(() => {
-    if (!transactions.length) return { totalExpense: 0, totalIncome: 0 };
-    
+    if (!transactions.length) return { totalExpense: 0, totalTxnIncome: 0 };
+
     return transactions.reduce((acc, txn) => {
-      if (txn.amount > 0) {
-        acc.totalExpense += txn.amount;
+      const amount = parseFloat(txn.amount);
+      if (txn.type === 'expense') {
+        acc.totalExpense += amount;
+      } else if (txn.type === 'income') {
+        acc.totalTxnIncome += amount;
       } else {
-        acc.totalIncome += Math.abs(txn.amount);
+        // Fallback
+        if (amount > 0) acc.totalExpense += amount;
       }
       return acc;
-    }, { totalExpense: 0, totalIncome: 0 });
+    }, { totalExpense: 0, totalTxnIncome: 0 });
   }, [transactions]);
 
   // Transactions fetching effect
@@ -66,7 +70,7 @@ function Transaction() {
         setIsLoading(false);
       }
     }
-    
+
     getTransactions().then(transactions => {
       if (Array.isArray(transactions)) {
         setTransactions(transactions);
@@ -77,8 +81,8 @@ function Transaction() {
   }, []);
 
   // Derived values from state (not hooks, safe to put here)
-  const { totalExpense, totalIncome } = calculateTotals();
-  const balance = income - totalExpense;
+  const { totalExpense, totalTxnIncome } = calculateTotals();
+  const balance = (income || 0) + totalTxnIncome - totalExpense;
   const recentTransactions = transactions.slice(0, 5);
 
   // Function declarations
@@ -101,14 +105,14 @@ function Transaction() {
 
   // Sidebar content renderer
   const renderSidebarContent = () => {
-    switch(activeTab) {
+    switch (activeTab) {
       case 'balance':
         return (
           <div className="balance-summary">
             <h3><FaWallet /> Balance Overview</h3>
             <div className="balance-item">
               <span>Income:</span>
-              <span className="income-amount">₹{income}</span>
+              <span className="income-amount">₹{(income || 0) + totalTxnIncome}</span>
             </div>
             <div className="balance-item">
               <span>Expenses:</span>
@@ -135,8 +139,8 @@ function Transaction() {
                       <span className="txn-category">{txn.category}</span>
                       <span className="txn-desc">{txn.description}</span>
                     </div>
-                    <span className={`txn-amount ${txn.expense > 0 ? 'expense' : 'income'}`}>
-                      {txn.expense > 0 ? '-' : '+'}₹{Math.abs(txn.amount)}
+                    <span className={`txn-amount ${txn.type === 'expense' ? 'expense' : 'income'}`}>
+                      {txn.type === 'expense' ? '-' : '+'}₹{Math.abs(txn.amount)}
                     </span>
                   </li>
                 ))}
@@ -147,17 +151,8 @@ function Transaction() {
           </div>
         );
     }
-    
+
   };
-
-  // Early returns - must come after all hooks and function declarations
-  if (isLoading) {
-    return <div className="loading">Loading...</div>;
-  }
-
-  // if (!userInfo || !userInfo.email) {
-  //   return <SignIn />;
-  // }
 
   // Main component render
   return (
@@ -176,22 +171,22 @@ function Transaction() {
             </div>
             <div className="user-email">{userInfo?.email || 'Guest User'}</div>
           </div>
-          
+
           <div className="sidebar-tabs">
-            <button 
+            <button
               className={activeTab === 'transactions' ? 'active' : ''}
               onClick={() => setActiveTab('transactions')}
             >
               <FaHistory /> Transactions
             </button>
-            <button 
+            <button
               className={activeTab === 'balance' ? 'active' : ''}
               onClick={() => setActiveTab('balance')}
             >
               <FaWallet /> Balance
             </button>
           </div>
-          
+
           <div className="sidebar-content">
             {renderSidebarContent()}
           </div>
@@ -207,15 +202,15 @@ function Transaction() {
             )}
           </div>
         </div>
-        
+
         {/* View All Transactions Button - Right Aligned */}
-        <div style={{ 
-          marginLeft: 'auto', 
-          display: 'flex', 
-          alignItems: 'center', 
-          marginRight: '15px' 
+        <div style={{
+          marginLeft: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          marginRight: '15px'
         }}>
-          <button 
+          <button
             className="view-all-btn"
             onClick={() => navigate('/transactions')}
             aria-label="View all transactions"
@@ -231,12 +226,18 @@ function Transaction() {
         <div className="expense-container">
           <div className="transactions-page">
             <div className="expense-graph">
-              <Chart transactions={transactions} />
+              {isLoading ? (
+                <div className="loading-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+                  <div className="loading">Loading...</div>
+                </div>
+              ) : (
+                <Chart transactions={transactions} />
+              )}
             </div>
           </div>
         </div>
       </main>
-      
+
       {showExpenseForm && <Navigate to="/add-new-expense" />}
     </div>
   );

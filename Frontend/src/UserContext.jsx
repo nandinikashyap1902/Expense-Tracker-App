@@ -22,29 +22,31 @@ export function UserContextProvider({ children }) {
   };
 
   // Check for existing session on initial load
-  useEffect(() => {
+  useEffect(() => { // turbo
     const checkSession = async () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/profile`, {
           credentials: 'include'
         });
-        
+
         if (response.ok) {
           const userData = await response.json();
           if (userData) {
             setUserInfo(userData);
             setIncomeState(userData.income || 0);
           }
+        } else {
+          // If session is invalid (401, etc.), clear local storage
+          setUserInfo(null);
         }
       } catch (err) {
         console.error('Session check failed:', err);
+        setUserInfo(null);
       }
     };
 
-    // Only check session if we don't have user info
-    if (!userInfo || !userInfo.email) {
-      checkSession();
-    }
+    // Check session on mount to ensure local storage matches backend session
+    checkSession();
   }, []);
 
   return (

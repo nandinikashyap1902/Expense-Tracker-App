@@ -1,6 +1,7 @@
 // In App.jsx
 import { Route, Routes } from 'react-router-dom';
 import Transaction from './Transaction';
+import Dashboard from './Dashboard';
 import Transactions from './Addtransaction';
 import Header from './Header';
 import SignUp from './SignUp';
@@ -17,32 +18,32 @@ function App() {
       <Routes>
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signin" element={<SignIn />} />
-        
+
         {/* Protected Routes */}
         <Route path="/" element={
           <ProtectedRoute>
-            <Transaction />
+            <Dashboard />
           </ProtectedRoute>
         } />
-        
+
         <Route path="/add-new-expense" element={
           <ProtectedRoute>
             <Transactions />
           </ProtectedRoute>
         } />
-        
+
         <Route path="/header" element={
           <ProtectedRoute>
             <Header />
           </ProtectedRoute>
         } />
-        
+
         <Route path="/edit-transaction/:id" element={
           <ProtectedRoute>
             <EditTransaction />
           </ProtectedRoute>
         } />
-        
+
         <Route path="/transactions" element={
           <ProtectedRoute>
             <AllTransactions />
