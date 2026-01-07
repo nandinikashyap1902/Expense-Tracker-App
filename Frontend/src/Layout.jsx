@@ -1,7 +1,9 @@
+
 import React, { useState, useContext } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserContext } from './UserContext';
 import { FaWallet, FaHome, FaHistory, FaSignOutAlt, FaTimes, FaBars, FaPlus } from 'react-icons/fa';
+import Chatbot from './Chatbot';
 import './Layout.css';
 
 const Layout = ({ children }) => {
@@ -79,6 +81,8 @@ const Layout = ({ children }) => {
             <main className="app-main">
                 {children}
             </main>
+
+            <Chatbot />
         </div>
     );
 };

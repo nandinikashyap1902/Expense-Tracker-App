@@ -11,6 +11,7 @@ app.use(cookieParser())
 dotenv.config()
 // const mongoURL = "mongodb+srv://nandinikashyap:cmR4Xn6Rw9U6HcV0@cluster0.mxgfz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 const mongoose = require("mongoose")
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 // const corsoptions = {
 //     origin: 'http://localhost:5173',
 //     credentials: true, 
@@ -314,6 +315,91 @@ app.get('/api/transaction/:id', async (req, res) => {
 
     const transaction = await Transaction.findById(id)
     res.json(transaction)
+})
+
+app.post('/api/chat', authMiddleware, async (req, res) => {
+    try {
+        console.log("Chat request received");
+        const { message } = req.body;
+        console.log("Message:", message);
+
+        if (!message) {
+            return res.status(400).json({ error: "Message is required" });
+        }
+
+        console.log("Checking API Key...");
+        if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes("YOUR_FREE")) {
+            console.error("Invalid API Key");
+            return res.status(500).json({ error: "API Key is missing or default." });
+        }
+
+        // Initialize Gemini
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        console.log("Fetching User Data...");
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            console.error("User not found");
+            return res.status(404).json({ error: "User profile not found." });
+        }
+
+        console.log("Fetching Transactions...");
+
+        // 2. Fetch Transactions for the last 60 days (Current + Previous Month High Fidelity Data)
+        const sixtyDaysAgo = new Date();
+        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+        const transactions = await Transaction.find({
+            author: req.user.id,
+            datetime: { $gte: sixtyDaysAgo.toISOString() }
+        }).sort({ datetime: -1 });
+
+        // Prepare context data string
+        const contextData = {
+            monthlyIncome: user.income,
+            currency: "INR",
+            transactions: transactions.map(t => ({
+                date: t.datetime,
+                amount: t.amount,
+                type: t.type,
+                category: t.category,
+                description: t.description
+            }))
+        };
+
+        const prompt = `
+            You are a Business Intelligence Financial Analyst for a personal finance app.
+            Your goal is to provide realistic, data-driven insights.
+
+            User Data (last 60 days):
+            ${JSON.stringify(contextData)}
+            
+            Current Date: ${new Date().toLocaleDateString()}
+            User Question: "${message}"
+
+            **CRITICAL GUIDELINES:**
+            1. **Analyze Trends**: processing the data, compare "This Month" vs "Last Month" (based on transaction dates).
+            2. **Be Specific**: precise numbers are better than generalities. (e.g., "You spent ₹2,400 more on Food").
+            3. **Actionable Tips**: If you see a spike (e.g., high dining costs), suggest a specific cutback amount relative to their income.
+            
+            **Expected Output Style for "Summary" requests:**
+            "You spent [X]% [more/less] on [Category] this month compared to last month. 
+            Your biggest expense was [Category] (₹[Amount]). Consider [Actionable Tip] to save ₹[SavedAmount] next month."
+
+            If the user asks a simple question (e.g. "Total spent on food"), just answer simply.
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        res.json({ reply: text });
+
+    } catch (error) {
+        console.error("AI Chat Error:", error);
+        res.status(500).json({ error: "Failed to generate response. Ensure GEMINI_API_KEY is set." });
+    }
 })
 app.listen(5000, () => {
     console.log('i am running')

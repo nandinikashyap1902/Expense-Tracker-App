@@ -161,6 +161,17 @@ const Dashboard = () => {
                 >
                     <FaPlus /> Add New
                 </motion.button>
+                <motion.button
+                    className="add-btn-dashboard"
+                    style={{ marginLeft: '1rem', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => window.dispatchEvent(new CustomEvent('trigger-ai-chat', {
+                        detail: { message: "Give me a monthly spending summary with insights." }
+                    }))}
+                >
+                    ✨ AI Summary
+                </motion.button>
             </div>
 
             {/* Stats Grid */}
