@@ -282,6 +282,7 @@ app.put('/api/transaction', async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, process.env.SECRET_KEY);
+  
         const { amount, type, datetime, category, description, id } = req.body;
 
         const transaction = await Transaction.findById(id);

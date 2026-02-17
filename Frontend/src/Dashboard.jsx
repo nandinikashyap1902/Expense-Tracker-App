@@ -74,7 +74,7 @@ const Dashboard = () => {
                 categories[t.category] = (categories[t.category] || 0) + parseFloat(t.amount);
             }
         });
-
+        console.log('transactions',categories)
         const labels = Object.keys(categories);
         const data = Object.values(categories);
 

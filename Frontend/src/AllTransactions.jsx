@@ -107,7 +107,6 @@ const AllTransactions = () => {
   }, [transactions, searchTerm, filters]);
 
   const categories = ['all', ...new Set(transactions.map((t) => t.category).filter(Boolean))];
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'

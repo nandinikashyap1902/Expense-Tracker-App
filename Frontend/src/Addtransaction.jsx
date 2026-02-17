@@ -72,10 +72,12 @@ const AddTransaction = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    console.log(value)
     setFormData(prev => ({
       ...prev,
       [name]: name === 'amount' ? value.replace(/\D/g, '') : value
     }));
+     
   };
 
   const handleSubmit = async (e) => {
@@ -135,8 +137,8 @@ const AddTransaction = () => {
     } finally {
       setIsSubmitting(false);
     }
+    console.log(formData)
   };
-
   return (
     <Layout>
       <div style={{ maxWidth: '600px', margin: '0 auto' }}>
