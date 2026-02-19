@@ -160,7 +160,6 @@ app.post('/api/signin', async (req, res) => {
 
     const { email, password } = req.body
     try {
-
         const userEmail = await User.findOne({ email })
         if (!userEmail) {
             return res.status(400).json({ message: 'Invalid credentials.' });
