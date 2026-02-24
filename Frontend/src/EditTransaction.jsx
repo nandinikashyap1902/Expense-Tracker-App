@@ -1,4 +1,4 @@
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import Layout from './Layout';
@@ -36,7 +36,9 @@ const EditTransaction = () => {
   useEffect(() => {
     const fetchTransaction = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/transaction/${id}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/transaction/${id}`, {
+          credentials: 'include' // ✅ Added — GET needs auth too
+        });
         if (!response.ok) throw new Error('Failed to fetch transaction');
 
         const data = await response.json();
@@ -44,12 +46,11 @@ const EditTransaction = () => {
           amount: data.amount,
           category: data.category,
           description: data.description,
-          date: data.datetime.slice(0, 16), // Format for datetime-local
+          date: new Date(data.datetime).toISOString().slice(0, 16),
           type: data.type || (data.expense > 0 ? 'expense' : 'income') // fallback for legacy
         });
       } catch (err) {
         setError('Could not load transaction details.');
-        console.error(err);
       } finally {
         setIsLoading(false);
       }
@@ -61,7 +62,7 @@ const EditTransaction = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'amount' ? value.replace(/\D/g, '') : value
+      [name]: value
     }));
   };
 
@@ -71,13 +72,11 @@ const EditTransaction = () => {
     setError('');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/transaction`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/transaction/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id,
+          // ✅ id is now in URL params, NOT in the body
           amount: parseFloat(formData.amount),
           type: formData.type,
           category: formData.category,

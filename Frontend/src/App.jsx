@@ -1,53 +1,36 @@
-// In App.jsx
 import { Route, Routes } from 'react-router-dom';
-import Transaction from './Transaction';
-import Dashboard from './Dashboard';
-import Transactions from './Addtransaction';
-import Header from './Header';
-import SignUp from './SignUp';
-import SignIn from './SignIn';
-import { UserContextProvider } from './UserContext';
-import EditTransaction from './EditTransaction';
-import Profile from './Profile';
-import AllTransactions from './AllTransactions';
-import ProtectedRoute from './ProtectedRoute';
+import { UserContextProvider } from './context/UserContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Dashboard from './pages/Dashboard/Dashboard';
+import AddTransaction from './pages/AddTransaction/AddTransaction';
+import AllTransactions from './pages/AllTransactions/AllTransactions';
+import EditTransaction from './pages/EditTransaction/EditTransaction';
+import SignIn from './pages/Auth/SignIn';
+import SignUp from './pages/Auth/SignUp';
 
 function App() {
   return (
     <UserContextProvider>
       <Routes>
-        <Route path="/signup" element={<SignUp />} />
+        {/* Public routes */}
         <Route path="/signin" element={<SignIn />} />
+        <Route path="/signup" element={<SignUp />} />
 
-        {/* Protected Routes */}
+        {/* Protected routes */}
         <Route path="/" element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
+          <ProtectedRoute><Dashboard /></ProtectedRoute>
         } />
 
         <Route path="/add-new-expense" element={
-          <ProtectedRoute>
-            <Transactions />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/header" element={
-          <ProtectedRoute>
-            <Header />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/edit-transaction/:id" element={
-          <ProtectedRoute>
-            <EditTransaction />
-          </ProtectedRoute>
+          <ProtectedRoute><AddTransaction /></ProtectedRoute>
         } />
 
         <Route path="/transactions" element={
-          <ProtectedRoute>
-            <AllTransactions />
-          </ProtectedRoute>
+          <ProtectedRoute><AllTransactions /></ProtectedRoute>
+        } />
+
+        <Route path="/edit-transaction/:id" element={
+          <ProtectedRoute><EditTransaction /></ProtectedRoute>
         } />
       </Routes>
     </UserContextProvider>

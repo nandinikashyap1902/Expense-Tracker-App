@@ -1,0 +1,47 @@
+/* AddTransaction.css — scoped to pages/AddTransaction */
+
+.add-transaction-container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0 16px 40px;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    color: #333;
+    box-sizing: border-box;
+}
+
+.balance-card {
+    background: linear-gradient(135deg, #4f46e5, #818cf8);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: white;
+    margin: 0 auto 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+}
+
+.error-message {
+    color: #e74a3b;
+    background-color: #fde8e8;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 480px) {
+    .add-transaction-container {
+        padding: 0 12px 32px;
+    }
+}
