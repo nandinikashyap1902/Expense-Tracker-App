@@ -16,7 +16,7 @@ const chat = async (req, res, next) => {
         }
 
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
         // Fetch user + last 60 days of transactions in parallel
         const sixtyDaysAgo = new Date();
